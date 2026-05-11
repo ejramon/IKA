@@ -154,10 +154,15 @@ def api_marcar_leido():
 # ─────────────────────────────────────────────────────────────
 @app.route('/obtener_no_leidos', methods=['GET'])
 def api_obtener_no_leidos():
-    evento_id = request.args.get('evento')
-    socio_id  = int(request.args.get('socio'))
-    resultado = obtener_no_leidos(evento_id, socio_id)
-    return jsonify(resultado)
+    try:
+        evento_id = request.args.get('evento')
+        socio_id  = request.args.get('socio')
+        print(f"[DEBUG] obtener_no_leidos evento={evento_id} socio={socio_id}")
+        resultado = obtener_no_leidos(evento_id, socio_id)
+        return jsonify(resultado)
+    except Exception as e:
+        print(f"[ERROR] obtener_no_leidos: {e}")
+        return jsonify({'total': 0, 'detalle': {}}), 200
 
 
 # ─────────────────────────────────────────────────────────────
