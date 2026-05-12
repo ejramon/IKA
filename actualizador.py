@@ -154,15 +154,29 @@ def api_marcar_leido():
 # ─────────────────────────────────────────────────────────────
 @app.route('/obtener_no_leidos', methods=['GET'])
 def api_obtener_no_leidos():
+    evento_id = request.args.get('evento')
+    socio_id  = int(request.args.get('socio'))
+    resultado = obtener_no_leidos(evento_id, socio_id)
+    return jsonify(resultado)
+
+
+# ─────────────────────────────────────────────────────────────
+# RUTA 6: OBTENER NOMBRE DE UN SOCIO POR ID
+# ─────────────────────────────────────────────────────────────
+@app.route('/obtener_nombre_socio', methods=['GET'])
+def api_obtener_nombre_socio():
     try:
-        evento_id = request.args.get('evento')
-        socio_id  = request.args.get('socio')
-        print(f"[DEBUG] obtener_no_leidos evento={evento_id} socio={socio_id}")
-        resultado = obtener_no_leidos(evento_id, socio_id)
-        return jsonify(resultado)
-    except Exception as e:
-        print(f"[ERROR] obtener_no_leidos: {e}")
-        return jsonify({'total': 0, 'detalle': {}}), 200
+        socio_id = int(request.args.get('socio_id'))
+        conn = conectar_miembros()
+        cur = conn.cursor()
+        cur.execute("SELECT nombres, apellidos FROM miembros WHERE id = %s", (socio_id,))
+        row = cur.fetchone()
+        liberar_miembros(conn)
+        if row:
+            return jsonify({"nombre": f"{row[0]} {row[1]}".strip()})
+        return jsonify({"nombre": "Administrador"})
+    except Exception:
+        return jsonify({"nombre": "Administrador"})
 
 
 # ─────────────────────────────────────────────────────────────
