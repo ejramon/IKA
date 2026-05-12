@@ -180,6 +180,59 @@ def api_obtener_nombre_socio():
 
 
 # ─────────────────────────────────────────────────────────────
+# RUTA 7: OBTENER CONVERSACIONES CON ADMINS
+# Devuelve todas las conversaciones individuales donde el usuario
+# es participante_b y el admin es participante_a.
+# Así el chat del admin aparece siempre — no solo cuando hay no leídos.
+# ─────────────────────────────────────────────────────────────
+@app.route('/obtener_conversaciones_admin', methods=['GET'])
+def api_obtener_conversaciones_admin():
+    try:
+        evento_id = int(request.args.get('evento'))
+        socio_id  = int(request.args.get('socio'))
+
+        from pg_conexion import conectar_chat
+        conn_chat = conectar_chat()
+        cur = conn_chat.cursor()
+
+        # Traer conversaciones individuales donde el usuario es participante_b
+        cur.execute("""
+            SELECT c.participante_a
+            FROM conversaciones c
+            WHERE c.evento_id = %s
+              AND c.tipo_conv = 'individual'
+              AND c.participante_b = %s
+        """, (evento_id, socio_id))
+        admin_ids = [row[0] for row in cur.fetchall()]
+        conn_chat.close()
+
+        if not admin_ids:
+            return jsonify([])
+
+        # Traer nombres de los admins desde club_miembros
+        conn_m = conectar_miembros()
+        cur_m = conn_m.cursor()
+        cur_m.execute("""
+            SELECT id, nombres || ' ' || apellidos AS nombre
+            FROM miembros WHERE id = ANY(%s)
+        """, (admin_ids,))
+        nombres = {row[0]: row[1] for row in cur_m.fetchall()}
+        liberar_miembros(conn_m)
+
+        result = []
+        for aid in admin_ids:
+            result.append({
+                "admin_id":     aid,
+                "admin_nombre": nombres.get(aid, "Administrador")
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        print(f"[obtener_conversaciones_admin] Error: {e}")
+        return jsonify([])
+
+
+# ─────────────────────────────────────────────────────────────
 # INICIO DEL SERVIDOR
 # ─────────────────────────────────────────────────────────────
 if __name__ == '__main__':
