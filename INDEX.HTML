@@ -685,13 +685,12 @@
        que el usuario puede escribir) para que los mensajes recibidos
        de cualquier rol siempre sean visibles.
     ══════════════════════════════════════════════════════════════ */
-    function abrirMenuChats() {
+    async function abrirMenuChats() {
         const lista = document.getElementById('lista-contactos');
         const noLeidosGeneral = noLeidosPorConv['GENERAL'] || 0;
         const badgeGeneral = noLeidosGeneral > 0
             ? `<span class="badge-conv">${noLeidosGeneral}</span>` : '';
 
-        // ── Bug 3 fix: usar el título real del evento ──
         const tituloEvento = usuarioActual.eventos[idEventoActivo]?.titulo || 'Chat General';
         const claseGeneral = noLeidosGeneral > 0 ? 'chat-contacto no-leido' : 'chat-contacto';
 
@@ -705,8 +704,6 @@
             </div>
             <div class="seccion-titulo">Mensajes Directos</div>`;
 
-        // Mostrar TODOS los participantes del evento
-        // (incluye Directores aunque el Colaborador no pueda responderles)
         const miRol = usuarioActual.eventos[idEventoActivo].rol.toUpperCase();
 
         for (const ced in dbGlobal) {
@@ -715,14 +712,11 @@
             const evInfo = p.eventos[idEventoActivo];
             if (!evInfo) continue;
 
-            const pRol   = evInfo.rol.toUpperCase();
+            const pRol    = evInfo.rol.toUpperCase();
             const keyConv = String(p.socio_id);
             const nl      = noLeidosPorConv[keyConv] || 0;
             const badgeP  = nl > 0 ? `<span class="badge-conv">${nl}</span>` : '';
-
-            // Ícono de bloqueo si el usuario no puede escribir (pero sí ve el chat)
-            const bloq   = !puedeEscribirA(miRol, pRol) ? ' 🔒' : '';
-            // ── Bug 2 fix: resaltar chats con mensajes no leídos ──
+            const bloq    = !puedeEscribirA(miRol, pRol) ? ' 🔒' : '';
             const claseContacto = nl > 0 ? 'chat-contacto no-leido' : 'chat-contacto';
 
             lista.innerHTML += `
@@ -736,7 +730,8 @@
         }
 
         // ── Mensajes de Administradores ──
-        // Buscar socio_ids en noLeidosPorConv que no son participantes del evento
+        // Traer TODAS las conversaciones individuales del usuario desde el servidor
+        // (no solo las que tienen mensajes no leídos — así el chat persiste)
         const idsParticipantes = new Set();
         for (const ced in dbGlobal) {
             const p = dbGlobal[ced];
@@ -745,34 +740,48 @@
             }
         }
 
-        let hayMensajesAdmin = false;
-        for (const sid in noLeidosPorConv) {
-            if (sid === 'GENERAL') continue;
-            if (!idsParticipantes.has(String(sid))) {
-                // Es un admin — mostrar sección si no está ya
-                if (!hayMensajesAdmin) {
-                    lista.innerHTML += `<div class="seccion-titulo">📨 Mensajes de Admin</div>`;
-                    hayMensajesAdmin = true;
+        try {
+            const resConvs = await fetch(
+                `${SERVER_URL}/obtener_conversaciones_admin?evento=${idEventoActivo}&socio=${usuarioActual.socio_id}`
+            );
+            const convs = await resConvs.json();
+
+            if (convs.length > 0) {
+                lista.innerHTML += `<div class="seccion-titulo">📨 Mensajes de Admin</div>`;
+                for (const conv of convs) {
+                    const sid       = String(conv.admin_id);
+                    const nl        = noLeidosPorConv[sid] || 0;
+                    const badgeA    = nl > 0 ? `<span class="badge-conv">${nl}</span>` : '';
+                    const claseAdmin = nl > 0 ? 'chat-contacto no-leido' : 'chat-contacto';
+                    const nombreAdmin = conv.admin_nombre || 'Administrador';
+                    lista.innerHTML += `
+                        <div class="${claseAdmin}" onclick="abrirConversacion('${sid}','${nombreAdmin}','ADMIN')">
+                            <div>
+                                <strong>🛡️ ${nombreAdmin}</strong>
+                                <br><small>Administrador</small>
+                            </div>
+                            <div style="display:flex;align-items:center;">✉️${badgeA}</div>
+                        </div>`;
                 }
-                const nl = noLeidosPorConv[sid] || 0;
-                const badgeA = nl > 0 ? `<span class="badge-conv">${nl}</span>` : '';
-                const claseAdmin = nl > 0 ? 'chat-contacto no-leido' : 'chat-contacto';
-                // Buscar nombre del admin en dbGlobal por socio_id
-                let nombreAdmin = 'Administrador';
-                for (const ced in dbGlobal) {
-                    if (String(dbGlobal[ced].socio_id) === String(sid)) {
-                        nombreAdmin = dbGlobal[ced].nombre;
-                        break;
+            }
+        } catch(e) {
+            // Si falla el fetch, mostrar solo los que tienen mensajes no leídos
+            let hayAdmin = false;
+            for (const sid in noLeidosPorConv) {
+                if (sid === 'GENERAL') continue;
+                if (!idsParticipantes.has(String(sid))) {
+                    if (!hayAdmin) {
+                        lista.innerHTML += `<div class="seccion-titulo">📨 Mensajes de Admin</div>`;
+                        hayAdmin = true;
                     }
+                    const nl = noLeidosPorConv[sid] || 0;
+                    const badgeA = nl > 0 ? `<span class="badge-conv">${nl}</span>` : '';
+                    lista.innerHTML += `
+                        <div class="chat-contacto" onclick="abrirConversacion('${sid}','Administrador','ADMIN')">
+                            <div><strong>🛡️ Administrador</strong><br><small>Administrador</small></div>
+                            <div style="display:flex;align-items:center;">✉️${badgeA}</div>
+                        </div>`;
                 }
-                lista.innerHTML += `
-                    <div class="${claseAdmin}" onclick="abrirConversacion('${sid}','${nombreAdmin}','ADMIN')">
-                        <div>
-                            <strong>🛡️ ${nombreAdmin}</strong>
-                            <br><small>Administrador</small>
-                        </div>
-                        <div style="display:flex;align-items:center;">✉️${badgeA}</div>
-                    </div>`;
             }
         }
 
