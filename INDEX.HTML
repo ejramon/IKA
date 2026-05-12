@@ -645,6 +645,7 @@
                      (NO puede iniciar mensaje a Directores)
     ══════════════════════════════════════════════════════════════ */
     function puedeEscribirA(miRol, suRol) {
+        if (suRol === 'ADMIN') return true;  // siempre se puede responder a un admin
         if (miRol === 'DIRECTOR')    return true;
         if (miRol === 'COORDINADOR') return true;
         // COLABORADOR
@@ -734,6 +735,47 @@
                 </div>`;
         }
 
+        // ── Mensajes de Administradores ──
+        // Buscar socio_ids en noLeidosPorConv que no son participantes del evento
+        const idsParticipantes = new Set();
+        for (const ced in dbGlobal) {
+            const p = dbGlobal[ced];
+            if (p.eventos && p.eventos[idEventoActivo]) {
+                idsParticipantes.add(String(p.socio_id));
+            }
+        }
+
+        let hayMensajesAdmin = false;
+        for (const sid in noLeidosPorConv) {
+            if (sid === 'GENERAL') continue;
+            if (!idsParticipantes.has(String(sid))) {
+                // Es un admin — mostrar sección si no está ya
+                if (!hayMensajesAdmin) {
+                    lista.innerHTML += `<div class="seccion-titulo">📨 Mensajes de Admin</div>`;
+                    hayMensajesAdmin = true;
+                }
+                const nl = noLeidosPorConv[sid] || 0;
+                const badgeA = nl > 0 ? `<span class="badge-conv">${nl}</span>` : '';
+                const claseAdmin = nl > 0 ? 'chat-contacto no-leido' : 'chat-contacto';
+                // Buscar nombre del admin en dbGlobal por socio_id
+                let nombreAdmin = 'Administrador';
+                for (const ced in dbGlobal) {
+                    if (String(dbGlobal[ced].socio_id) === String(sid)) {
+                        nombreAdmin = dbGlobal[ced].nombre;
+                        break;
+                    }
+                }
+                lista.innerHTML += `
+                    <div class="${claseAdmin}" onclick="abrirConversacion('${sid}','${nombreAdmin}','ADMIN')">
+                        <div>
+                            <strong>🛡️ ${nombreAdmin}</strong>
+                            <br><small>Administrador</small>
+                        </div>
+                        <div style="display:flex;align-items:center;">✉️${badgeA}</div>
+                    </div>`;
+            }
+        }
+
         document.getElementById('overlay-lista-chats').classList.add('activo');
     }
 
@@ -763,7 +805,9 @@
 
         document.getElementById('nombre-chat-activo').innerText = nombre;
         document.getElementById('rol-chat-activo').innerText    =
-            rol === 'GRUPO' ? `Chat grupal · ${usuarioActual.eventos[idDestino === 'GENERAL' ? idEventoActivo : idEventoActivo]?.titulo || 'Evento'}` : rol;
+            rol === 'GRUPO'  ? `Chat grupal · ${usuarioActual.eventos[idEventoActivo]?.titulo || 'Evento'}` :
+            rol === 'ADMIN'  ? 'Administrador BlackBelt' :
+            rol;
 
         // ¿Puede escribir?
         const miRol = usuarioActual.eventos[idEventoActivo]?.rol?.toUpperCase() || '';
