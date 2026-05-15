@@ -31,23 +31,23 @@
 
 /* ═══════════════════════ TEMA CLARO (vino + beige) ══════════════════ */
 body.tema-claro {
-  --fondo:         #F5EDE0;
-  --sup:           #EDE0CE;
-  --sup2:          #E3D4BC;
+  --fondo:         #F2F4F8;
+  --sup:           #E8EBF3;
+  --sup2:          #DCE0EC;
   --primario:      #7B1E2E;
   --primario-dark: #5C1520;
   --acento:        #9B2335;
   --acento-h:      #7B1E2E;
-  --texto:         #2D1010;
-  --texto-s:       #7A4040;
-  --borde:         #C9A88A;
+  --texto:         #111827;
+  --texto-s:       #4A5580;
+  --borde:         #C2C8DC;
   --exito:         #1A7A3A;
   --peligro:       #C0392B;
   --blanco:        #FFFFFF;
-  --hero-txt:      #F5EDE0;
-  --badge-global-bg:  rgba(155,35,53,.12);
+  --hero-txt:      #F2F4F8;
+  --badge-global-bg:  rgba(155,35,53,.1);
   --badge-global-clr: #7B1E2E;
-  --badge-club-bg:    rgba(26,122,58,.12);
+  --badge-club-bg:    rgba(26,122,58,.1);
   --badge-club-clr:   #1A7A3A;
 }
 
@@ -81,9 +81,12 @@ body.tema-claro .g-header .club-name{color:rgba(245,237,224,.6)}
 .btn-back{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);
   padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;transition:.2s}
 .btn-back:hover{border-color:var(--acento);color:var(--blanco)}
-.btn-logout{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;
-  font-size:.82rem;padding:6px 10px;border-radius:6px;transition:.2s}
-.btn-logout:hover{color:#EF4444}
+.btn-logout{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);
+  color:#EF8888;cursor:pointer;font-size:.78rem;font-weight:700;
+  padding:5px 13px;border-radius:6px;transition:.2s;letter-spacing:.3px}
+.btn-logout:hover{background:var(--peligro);color:var(--blanco);border-color:var(--peligro)}
+body.tema-claro .btn-logout{background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.35);color:#C0392B}
+body.tema-claro .btn-logout:hover{background:#C0392B;color:#fff;border-color:#C0392B}
 
 /* ── LOGIN ── */
 #screen-login{align-items:center;justify-content:center;padding:20px;
@@ -413,6 +416,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <button class="btn-back" onclick="goHome()">← Inicio</button>
     <span class="logo">📋 BASE DE DATOS</span>
     <span class="club-name" id="base-club-name"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
   </div>
   <div class="content">
     <div class="btn-bar">
@@ -448,6 +452,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <button class="btn-back" onclick="goTo('base')">← Base de Datos</button>
     <span class="logo">👤 FICHA DEL AFILIADO</span>
     <span class="club-name" id="ficha-club-name"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
   </div>
   <div class="content">
     <div class="ficha-card">
@@ -505,6 +510,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <button class="btn-back" onclick="goTo('base')">← Base de Datos</button>
     <span class="logo" id="form-titulo">➕ NUEVO AFILIADO</span>
     <span class="club-name" id="form-club-name"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
   </div>
   <div class="content">
     <div class="form-card">
@@ -552,6 +558,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <button class="btn-back" onclick="goHome()">← Inicio</button>
     <span class="logo">🔍 BUSCAR POR CÉDULA</span>
     <span class="club-name" id="buscar-club-name"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
   </div>
   <div class="content" style="max-width:520px">
     <div class="form-group" style="margin-bottom:16px">
@@ -570,6 +577,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <button class="btn-back" onclick="goHome()">← Inicio</button>
     <span class="logo">⚙️ GESTIONAR CATEGORÍAS</span>
     <span class="club-name" id="cat-club-name"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
   </div>
   <div class="content">
     <p style="font-size:.8rem;color:var(--texto-s);margin-bottom:14px">
@@ -593,6 +601,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <button class="btn-back" onclick="goHome()">← Inicio</button>
     <span class="logo">🔧 CONFIGURACIÓN</span>
     <span class="club-name" id="cfg-club-name"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
   </div>
   <div class="content">
 
