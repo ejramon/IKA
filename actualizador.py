@@ -12,14 +12,14 @@ import hashlib
 from datetime import datetime, timedelta
 from functools import wraps
 
+from pg_conexion import conectar_miembros, liberar_miembros
+
 try:
     import jwt as pyjwt
     JWT_OK = True
 except ImportError:
     JWT_OK = False
     print("Aviso: PyJWT no instalado. Rutas /club/ no disponibles. Ejecutá: pip install PyJWT")
-
-from pg_conexion import conectar_miembros, liberar_miembros
 
 try:
     from exportador_api import generar_json_para_safari
@@ -92,7 +92,6 @@ def require_club(f):
         g.club_cedula = payload["cedula"]
         return f(*args, **kwargs)
     return decorated
-
 
 # ─────────────────────────────────────────────────────────────
 # MIGRACIÓN AUTOMÁTICA — se ejecuta en el primer request
@@ -196,7 +195,7 @@ def ejecutar_db(query, params):
 # ─────────────────────────────────────────────────────────────
 @app.route('/data_servidor.json')
 def servir_data():
-    generar_json_para_safari()   # regenera desde PostgreSQL antes de servir
+    generar_json_para_safari()
     try:
         with open('data_servidor.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -224,25 +223,19 @@ def actualizar_tareas():
     data = request.get_json()
     if not data:
         return jsonify({"status": "error", "message": "No se recibieron datos"}), 400
-
     socio_id = data.get('socio_id')
     cambios  = data.get('cambios')
-
     if not socio_id or not cambios:
         return jsonify({"status": "error", "message": "Datos incompletos"}), 400
-
     exitos = 0
     for id_tarea, nuevo_estado in cambios.items():
-        # nuevo_estado viene como 0/1 desde el iPhone → convertir a BOOLEAN de PG
         estado_bool = bool(int(nuevo_estado))
         query = "UPDATE checklist_items SET completado = %s WHERE id = %s"
         if ejecutar_db(query, (estado_bool, id_tarea)):
             exitos += 1
             logging.info(f"Socio ID {socio_id} - Tarea ID {id_tarea} - Estado: {nuevo_estado}")
-
     if exitos > 0:
         generar_json_para_safari()
-
     return jsonify({
         "status":      "success",
         "mensaje":     f"Procesado: {exitos} éxitos.",
@@ -302,12 +295,72 @@ def api_obtener_no_leidos():
     return jsonify(resultado)
 
 
+# ─────────────────────────────────────────────────────────────
+# RUTA 6: OBTENER NOMBRE DE UN SOCIO POR ID
+# ─────────────────────────────────────────────────────────────
+@app.route('/obtener_nombre_socio', methods=['GET'])
+def api_obtener_nombre_socio():
+    try:
+        socio_id = int(request.args.get('socio_id'))
+        conn = conectar_miembros()
+        cur = conn.cursor()
+        cur.execute("SELECT nombres, apellidos FROM miembros WHERE id = %s", (socio_id,))
+        row = cur.fetchone()
+        liberar_miembros(conn)
+        if row:
+            return jsonify({"nombre": f"{row[0]} {row[1]}".strip()})
+        return jsonify({"nombre": "Administrador"})
+    except Exception:
+        return jsonify({"nombre": "Administrador"})
+
+
+# ─────────────────────────────────────────────────────────────
+# RUTA 7: OBTENER CONVERSACIONES CON ADMINS
+# ─────────────────────────────────────────────────────────────
+@app.route('/obtener_conversaciones_admin', methods=['GET'])
+def api_obtener_conversaciones_admin():
+    try:
+        evento_id = int(request.args.get('evento'))
+        socio_id  = int(request.args.get('socio'))
+        from pg_conexion import conectar_chat
+        conn_chat = conectar_chat()
+        cur = conn_chat.cursor()
+        cur.execute("""
+            SELECT c.participante_a
+            FROM conversaciones c
+            WHERE c.evento_id = %s
+              AND c.tipo_conv = 'individual'
+              AND c.participante_b = %s
+        """, (evento_id, socio_id))
+        admin_ids = [row[0] for row in cur.fetchall()]
+        conn_chat.close()
+        if not admin_ids:
+            return jsonify([])
+        conn_m = conectar_miembros()
+        cur_m = conn_m.cursor()
+        cur_m.execute("""
+            SELECT id, nombres || ' ' || apellidos AS nombre
+            FROM miembros WHERE id = ANY(%s)
+        """, (admin_ids,))
+        nombres = {row[0]: row[1] for row in cur_m.fetchall()}
+        liberar_miembros(conn_m)
+        result = []
+        for aid in admin_ids:
+            result.append({
+                "admin_id":     aid,
+                "admin_nombre": nombres.get(aid, "Administrador")
+            })
+        return jsonify(result)
+    except Exception as e:
+        print(f"[obtener_conversaciones_admin] Error: {e}")
+        return jsonify([])
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # PORTAL DE CLUBS — rutas /club/...
 # Autenticación via JWT. Cada club solo accede a sus propios datos.
 # ═════════════════════════════════════════════════════════════════════════════
 
-# ── SERVIR club.html ──────────────────────────────────────────────────────────
 @app.route('/club')
 @app.route('/club/')
 def servir_club():
@@ -764,6 +817,8 @@ def club_hist_delete(reg_id):
         return jsonify({"error": str(e)}), 500
 
 
+# ─────────────────────────────────────────────────────────────
+# INICIO DEL SERVIDOR
 # ─────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5002))
