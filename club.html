@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IKA Ecuador — Portal de Clubs</title>
+<!-- SheetJS para importar Excel (feature-import) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+/* ═══════════════════════ TEMA OSCURO (defecto) ═══════════════════════ */
 :root {
   --fondo:         #070E1C;
   --sup:           #0C1829;
@@ -18,19 +21,50 @@
   --borde:         #182C48;
   --exito:         #22C55E;
   --peligro:       #EF4444;
-  --amarillo:      #F0C040;
   --blanco:        #FFFFFF;
+  --hero-txt:      var(--blanco);
+  --badge-global-bg:  rgba(74,143,232,.12);
+  --badge-global-clr: #4A8FE8;
+  --badge-club-bg:    rgba(34,197,94,.12);
+  --badge-club-clr:   #22C55E;
 }
+
+/* ═══════════════════════ TEMA CLARO (vino + beige) ══════════════════ */
+body.tema-claro {
+  --fondo:         #F5EDE0;
+  --sup:           #EDE0CE;
+  --sup2:          #E3D4BC;
+  --primario:      #7B1E2E;
+  --primario-dark: #5C1520;
+  --acento:        #9B2335;
+  --acento-h:      #7B1E2E;
+  --texto:         #2D1010;
+  --texto-s:       #7A4040;
+  --borde:         #C9A88A;
+  --exito:         #1A7A3A;
+  --peligro:       #C0392B;
+  --blanco:        #FFFFFF;
+  --hero-txt:      #F5EDE0;
+  --badge-global-bg:  rgba(155,35,53,.12);
+  --badge-global-clr: #7B1E2E;
+  --badge-club-bg:    rgba(26,122,58,.12);
+  --badge-club-clr:   #1A7A3A;
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:var(--texto);min-height:100vh;overflow-x:hidden}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:var(--texto);
+  min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s}
 
 /* ── TOAST ── */
 #toast{position:fixed;top:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:8px}
 .toast-item{padding:12px 18px;border-radius:8px;font-size:.88rem;font-weight:600;
-  box-shadow:0 4px 20px rgba(0,0,0,.5);animation:slideIn .3s ease;max-width:320px}
-.toast-ok{background:#0D3320;border:1px solid var(--exito);color:var(--exito)}
-.toast-err{background:#2A0D0D;border:1px solid var(--peligro);color:var(--peligro)}
+  box-shadow:0 4px 20px rgba(0,0,0,.3);animation:slideIn .3s ease;max-width:320px}
+.toast-ok  {background:#0D3320;border:1px solid var(--exito);color:var(--exito)}
+.toast-err {background:#2A0D0D;border:1px solid var(--peligro);color:var(--peligro)}
 .toast-info{background:#0D1E3A;border:1px solid var(--acento);color:var(--acento)}
+body.tema-claro .toast-ok  {background:#D4EDDA;color:#1A7A3A}
+body.tema-claro .toast-err {background:#F8D7DA;color:#C0392B}
+body.tema-claro .toast-info{background:#D6E4F7;color:#7B1E2E}
 @keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes fadeOut{to{opacity:0;transform:translateX(120%)}}
 
@@ -41,53 +75,58 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 /* ── HEADER GLOBAL ── */
 .g-header{background:var(--primario-dark);border-bottom:1px solid var(--borde);
   display:flex;align-items:center;padding:10px 20px;gap:12px;min-height:54px}
-.g-header .logo{font-size:1.3rem;color:var(--acento);font-weight:800;letter-spacing:1px}
-.g-header .club-name{font-size:.85rem;color:var(--texto-s);margin-left:auto}
-.btn-back{background:none;border:1px solid var(--borde);color:var(--texto-s);
+.g-header .logo{font-size:1.1rem;color:var(--acento);font-weight:800;letter-spacing:1px}
+.g-header .club-name{font-size:.82rem;color:rgba(255,255,255,.5);margin-left:auto}
+body.tema-claro .g-header .club-name{color:rgba(245,237,224,.6)}
+.btn-back{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);
   padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;transition:.2s}
-.btn-back:hover{border-color:var(--acento);color:var(--acento)}
-.btn-logout{background:none;border:none;color:var(--texto-s);cursor:pointer;
+.btn-back:hover{border-color:var(--acento);color:var(--blanco)}
+.btn-logout{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;
   font-size:.82rem;padding:6px 10px;border-radius:6px;transition:.2s}
-.btn-logout:hover{color:var(--peligro)}
+.btn-logout:hover{color:#EF4444}
 
 /* ── LOGIN ── */
-#screen-login{align-items:center;justify-content:center;padding:20px}
+#screen-login{align-items:center;justify-content:center;padding:20px;
+  background:linear-gradient(135deg, var(--fondo) 0%, var(--sup) 100%)}
 .login-card{background:var(--sup);border:1px solid var(--borde);border-radius:16px;
-  width:100%;max-width:420px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-.login-hero{background:var(--primario-dark);padding:32px 28px 24px;text-align:center}
-.login-hero .kanji{font-size:2.4rem;opacity:.12;position:absolute;right:22px;top:16px;
-  font-family:serif;font-weight:700}
+  width:100%;max-width:420px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.login-hero{background:var(--primario-dark);padding:32px 28px 24px;text-align:center;position:relative}
+.login-hero .kanji{font-size:5rem;opacity:.06;position:absolute;right:14px;top:8px;
+  font-family:serif;font-weight:700;color:var(--blanco);pointer-events:none}
 .login-hero h1{font-size:1.6rem;font-weight:800;color:var(--acento);letter-spacing:2px}
-.login-hero p{font-size:.78rem;color:var(--texto-s);margin-top:4px}
+.login-hero p{font-size:.78rem;color:rgba(255,255,255,.5);margin-top:4px}
 .login-tabs{display:flex;border-bottom:1px solid var(--borde)}
 .login-tab{flex:1;padding:12px;background:none;border:none;color:var(--texto-s);
   cursor:pointer;font-size:.88rem;font-weight:600;transition:.2s;border-bottom:2px solid transparent}
 .login-tab.active{color:var(--acento);border-bottom-color:var(--acento);background:rgba(74,143,232,.06)}
+body.tema-claro .login-tab.active{background:rgba(155,35,53,.06)}
 .login-body{padding:28px}
 .form-group{margin-bottom:16px}
-.form-group label{display:block;font-size:.75rem;font-weight:700;color:var(--texto-s);
+.form-group label{display:block;font-size:.72rem;font-weight:700;color:var(--texto-s);
   text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .form-group input,.form-group select{width:100%;background:var(--sup2);border:1px solid var(--borde);
   color:var(--texto);padding:10px 12px;border-radius:8px;font-size:.9rem;outline:none;transition:.2s}
 .form-group input:focus,.form-group select:focus{border-color:var(--acento);
-  box-shadow:0 0 0 3px rgba(74,143,232,.15)}
+  box-shadow:0 0 0 3px rgba(74,143,232,.12)}
+body.tema-claro .form-group input:focus,
+body.tema-claro .form-group select:focus{box-shadow:0 0 0 3px rgba(155,35,53,.12)}
 .form-group input::placeholder{color:var(--texto-s)}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .btn-primary{width:100%;background:var(--primario);color:var(--blanco);border:none;
   padding:12px;border-radius:8px;font-weight:700;font-size:.92rem;cursor:pointer;
   transition:.2s;letter-spacing:.5px}
 .btn-primary:hover{background:var(--acento-h)}
-.msg-pendiente{background:#0D1E3A;border:1px solid var(--acento);border-radius:8px;
+.msg-pendiente{background:rgba(74,143,232,.08);border:1px solid var(--acento);border-radius:8px;
   padding:16px;text-align:center;color:var(--acento);font-size:.85rem;line-height:1.6;margin-top:8px}
 
 /* ── HOME ── */
 #screen-home .home-hero{background:var(--primario-dark);padding:36px 20px 28px;text-align:center;
   position:relative;overflow:hidden}
 #screen-home .home-hero .kanji{font-size:5rem;opacity:.07;position:absolute;
-  right:30px;top:10px;font-family:serif;font-weight:700;color:var(--acento);pointer-events:none}
+  right:30px;top:10px;font-family:serif;font-weight:700;color:var(--blanco);pointer-events:none}
 #screen-home .home-hero h1{font-size:2rem;font-weight:800;color:var(--acento);letter-spacing:3px}
-#screen-home .home-hero h2{font-size:1rem;color:var(--blanco);margin-top:6px;font-weight:400}
-#screen-home .home-hero p{font-size:.78rem;color:var(--texto-s);margin-top:4px}
+#screen-home .home-hero h2{font-size:1rem;color:rgba(255,255,255,.8);margin-top:6px;font-weight:400}
+#screen-home .home-hero p{font-size:.78rem;color:rgba(255,255,255,.45);margin-top:4px}
 .home-line{height:2px;background:var(--acento);width:140px;margin:14px auto 0}
 .home-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:28px 32px;
   max-width:540px;margin:0 auto;flex:1;align-content:start}
@@ -95,17 +134,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
   padding:22px 16px;text-align:center;cursor:pointer;transition:.25s;
   display:flex;flex-direction:column;align-items:center;gap:10px}
 .home-btn:hover{border-color:var(--acento);background:var(--sup2);
-  transform:translateY(-2px);box-shadow:0 8px 24px rgba(74,143,232,.15)}
+  transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15)}
 .home-btn .icon{font-size:1.8rem}
 .home-btn .label{font-size:.82rem;font-weight:700;color:var(--texto);letter-spacing:.3px}
 .home-btn.full{grid-column:1/-1}
 .home-footer{padding:16px;text-align:center;color:var(--texto-s);font-size:.72rem;
   border-top:1px solid var(--borde)}
 
-/* ── CONTENT AREA ── */
+/* ── CONTENT ── */
 .content{flex:1;overflow-y:auto;padding:20px}
-.section-title{font-size:1.1rem;font-weight:700;color:var(--acento);margin-bottom:16px;
-  display:flex;align-items:center;gap:8px}
 .section-line{height:1px;background:var(--borde);margin:0 0 18px}
 
 /* ── TABLE ── */
@@ -116,13 +153,26 @@ thead th{background:var(--primario);color:var(--blanco);padding:10px 12px;
 tbody tr{border-bottom:1px solid var(--borde);transition:.15s}
 tbody tr:nth-child(even){background:var(--sup)}
 tbody tr:nth-child(odd){background:var(--fondo)}
-tbody tr:hover{background:rgba(74,143,232,.08)}
+tbody tr:hover{background:rgba(74,143,232,.06)}
+body.tema-claro tbody tr:hover{background:rgba(155,35,53,.05)}
 tbody td{padding:9px 12px;vertical-align:middle}
-.tbl-actions{display:flex;gap:6px;flex-wrap:nowrap}
+.tbl-actions{display:flex;gap:6px}
 .btn-tbl{background:none;border:1px solid var(--borde);color:var(--texto-s);
   padding:4px 9px;border-radius:5px;cursor:pointer;font-size:.78rem;transition:.15s;white-space:nowrap}
 .btn-tbl:hover{border-color:var(--acento);color:var(--acento)}
 .btn-tbl.danger:hover{border-color:var(--peligro);color:var(--peligro)}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 18px;border-radius:8px;font-weight:700;font-size:.84rem;
+  cursor:pointer;border:none;transition:.2s;letter-spacing:.3px}
+.btn-blue{background:var(--primario);color:var(--blanco)}
+.btn-blue:hover{background:var(--acento-h)}
+.btn-danger{background:rgba(239,68,68,.12);color:var(--peligro);border:1px solid var(--peligro)}
+.btn-danger:hover{background:var(--peligro);color:var(--blanco)}
+.btn-ghost{background:none;border:1px solid var(--borde);color:var(--texto-s)}
+.btn-ghost:hover{border-color:var(--acento);color:var(--acento)}
+.btn-sm{padding:6px 12px;font-size:.78rem}
+.btn-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
 
 /* ── SEARCH BAR ── */
 .search-bar{display:flex;gap:10px;margin-bottom:14px}
@@ -130,41 +180,23 @@ tbody td{padding:9px 12px;vertical-align:middle}
   padding:9px 14px;border-radius:8px;font-size:.88rem;outline:none}
 .search-bar input:focus{border-color:var(--acento)}
 
-/* ── BUTTONS ── */
-.btn{padding:9px 18px;border-radius:8px;font-weight:700;font-size:.84rem;
-  cursor:pointer;border:none;transition:.2s;letter-spacing:.3px}
-.btn-blue{background:var(--primario);color:var(--blanco)}
-.btn-blue:hover{background:var(--acento-h)}
-.btn-accent{background:var(--acento);color:#040D1A}
-.btn-accent:hover{background:var(--acento-h);color:var(--blanco)}
-.btn-danger{background:rgba(239,68,68,.15);color:var(--peligro);border:1px solid var(--peligro)}
-.btn-danger:hover{background:var(--peligro);color:var(--blanco)}
-.btn-ghost{background:none;border:1px solid var(--borde);color:var(--texto-s)}
-.btn-ghost:hover{border-color:var(--acento);color:var(--acento)}
-.btn-sm{padding:6px 12px;font-size:.78rem}
-.btn-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-
 /* ── FICHA ── */
 .ficha-card{background:var(--sup);border:1px solid var(--borde);border-radius:12px;
   overflow:hidden;margin-bottom:20px}
-.ficha-header{background:var(--primario-dark);padding:18px 22px;display:flex;
-  align-items:center;gap:16px}
+.ficha-header{background:var(--primario-dark);padding:18px 22px;display:flex;align-items:center;gap:16px}
 .ficha-avatar{width:52px;height:52px;border-radius:50%;background:var(--primario);
   display:flex;align-items:center;justify-content:center;font-size:1.4rem;
   border:2px solid var(--acento);flex-shrink:0}
 .ficha-nombre{font-size:1.2rem;font-weight:700;color:var(--blanco)}
-.ficha-cat{display:inline-block;background:rgba(74,143,232,.2);color:var(--acento);
-  border:1px solid rgba(74,143,232,.3);border-radius:20px;padding:2px 12px;
-  font-size:.76rem;font-weight:700;margin-top:4px}
+.ficha-cat{display:inline-block;background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);
+  border-radius:20px;padding:2px 12px;font-size:.76rem;font-weight:700;margin-top:4px}
 .ficha-body{padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.ficha-field label{font-size:.7rem;font-weight:700;color:var(--texto-s);
+.ficha-field label{font-size:.68rem;font-weight:700;color:var(--texto-s);
   text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px}
 .ficha-field span{font-size:.9rem;color:var(--texto)}
-.ficha-actions{padding:14px 22px;border-top:1px solid var(--borde);
-  display:flex;gap:10px;background:rgba(0,0,0,.2)}
+.ficha-actions{padding:14px 22px;border-top:1px solid var(--borde);display:flex;gap:10px}
 
 /* ── HISTORIAL ── */
-.hist-section{margin-top:4px}
 .hist-title{font-size:.95rem;font-weight:700;color:var(--texto);margin-bottom:12px;
   display:flex;align-items:center;justify-content:space-between}
 .hist-entry{background:var(--sup);border:1px solid var(--borde);border-radius:8px;
@@ -179,32 +211,63 @@ tbody td{padding:9px 12px;vertical-align:middle}
 .hist-val label{font-size:.68rem;font-weight:700;color:var(--texto-s);
   text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:2px}
 .hist-val span{font-size:.85rem;color:var(--texto)}
-.hist-form{background:var(--sup2);border:1px solid var(--borde);border-radius:10px;
-  padding:18px;margin-top:12px}
+.hist-form{background:var(--sup2);border:1px solid var(--borde);border-radius:10px;padding:18px;margin-top:12px}
 .hist-form h3{font-size:.88rem;font-weight:700;color:var(--acento);margin-bottom:14px}
 
 /* ── FORM ── */
-.form-card{background:var(--sup);border:1px solid var(--borde);border-radius:12px;
-  padding:24px;max-width:680px}
+.form-card{background:var(--sup);border:1px solid var(--borde);border-radius:12px;padding:24px;max-width:680px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .form-full{grid-column:1/-1}
 .radio-group{display:flex;gap:20px;align-items:center;margin-top:4px}
-.radio-group label{display:flex;align-items:center;gap:6px;cursor:pointer;
-  font-size:.88rem;color:var(--texto)}
+.radio-group label{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.88rem;color:var(--texto)}
 .radio-group input[type=radio]{accent-color:var(--acento);width:15px;height:15px}
 .badge-empty{color:var(--texto-s);font-size:.83rem;font-style:italic;padding:10px 0}
 
-/* ── CATEGORIAS ── */
-.cat-list{display:flex;flex-direction:column;gap:8px;max-width:480px}
+/* ── CATEGORÍAS ── */
+.cat-list{display:flex;flex-direction:column;gap:8px;max-width:560px}
 .cat-item{background:var(--sup);border:1px solid var(--borde);border-radius:8px;
-  padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
-.cat-item span{font-size:.88rem;color:var(--texto)}
+  padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cat-item span{font-size:.88rem;color:var(--texto);flex:1}
+.badge-fuente{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.badge-global{background:var(--badge-global-bg);color:var(--badge-global-clr)}
+.badge-club  {background:var(--badge-club-bg);  color:var(--badge-club-clr)}
 
 /* ── CONFIG ── */
 .config-section{background:var(--sup);border:1px solid var(--borde);border-radius:12px;
-  padding:22px;max-width:480px;margin-bottom:20px}
+  padding:22px;max-width:520px;margin-bottom:20px}
 .config-section h3{font-size:.9rem;font-weight:700;color:var(--acento);margin-bottom:14px;
   padding-bottom:10px;border-bottom:1px solid var(--borde)}
+
+/* ── TOGGLE TEMA ── */
+.tema-toggle{display:flex;align-items:center;gap:12px;padding:14px 18px;
+  background:var(--sup2);border-radius:10px;border:1px solid var(--borde);margin-bottom:12px}
+.tema-toggle span{font-size:.85rem;color:var(--texto);font-weight:600}
+.toggle-switch{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--borde);border-radius:24px;transition:.3s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;
+  left:3px;bottom:3px;background:var(--blanco);border-radius:50%;transition:.3s}
+.toggle-switch input:checked + .toggle-slider{background:var(--acento)}
+.toggle-switch input:checked + .toggle-slider::before{transform:translateX(20px)}
+
+/* ── EXCEL IMPORT (feature-import — para ocultar: .feature-import{display:none}) ── */
+.feature-import{}
+.import-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;
+  align-items:center;justify-content:center;padding:20px}
+.import-modal.open{display:flex}
+.import-box{background:var(--sup);border:1px solid var(--borde);border-radius:14px;
+  padding:28px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto}
+.import-box h2{font-size:1rem;font-weight:700;color:var(--acento);margin-bottom:16px}
+.col-map{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.col-map label{font-size:.72rem;font-weight:700;color:var(--texto-s);text-transform:uppercase;
+  letter-spacing:.4px;margin-bottom:4px;display:block}
+.col-map select{width:100%;background:var(--sup2);border:1px solid var(--borde);
+  color:var(--texto);padding:7px 10px;border-radius:7px;font-size:.82rem;outline:none}
+.import-preview{background:var(--sup2);border:1px solid var(--borde);border-radius:8px;
+  padding:12px;margin-bottom:14px;font-size:.78rem;color:var(--texto-s);max-height:120px;overflow-y:auto}
+.import-result{padding:14px;border-radius:8px;margin-top:12px;font-size:.85rem;line-height:1.7}
+.import-result.ok {background:rgba(34,197,94,.1); border:1px solid var(--exito);color:var(--exito)}
+.import-result.err{background:rgba(239,68,68,.1); border:1px solid var(--peligro);color:var(--peligro)}
 
 /* ── SPINNER ── */
 .spinner{text-align:center;padding:40px;color:var(--texto-s);font-size:.88rem}
@@ -213,8 +276,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
 /* ── RESPONSIVE ── */
 @media(max-width:520px){
   .home-grid{grid-template-columns:1fr;padding:20px}
-  .ficha-body{grid-template-columns:1fr}
-  .form-grid{grid-template-columns:1fr}
+  .ficha-body,.form-grid,.col-map{grid-template-columns:1fr}
   .form-row{grid-template-columns:1fr}
 }
 </style>
@@ -223,10 +285,41 @@ tbody td{padding:9px 12px;vertical-align:middle}
 
 <div id="toast"></div>
 
-<!-- ════════════════════════════ LOGIN ════════════════════════════ -->
+<!-- Modal importar Excel -->
+<div class="import-modal feature-import" id="import-modal">
+  <div class="import-box">
+    <h2>📥 Importar afiliados desde Excel</h2>
+    <p style="font-size:.82rem;color:var(--texto-s);margin-bottom:14px">
+      Seleccioná el archivo .xlsx o .xls y mapeá las columnas de tu planilla.
+    </p>
+    <div class="form-group">
+      <label>Archivo Excel</label>
+      <input type="file" id="excel-file" accept=".xlsx,.xls"
+             style="background:var(--sup2);border:1px solid var(--borde);color:var(--texto);
+                    padding:8px 12px;border-radius:8px;width:100%;cursor:pointer"
+             onchange="cargarExcel(this)">
+    </div>
+    <div id="excel-preview" class="import-preview" style="display:none"></div>
+    <div id="col-map-wrap" style="display:none">
+      <p style="font-size:.8rem;font-weight:700;color:var(--texto-s);margin-bottom:10px">
+        MAPEO DE COLUMNAS — seleccioná qué columna de tu Excel corresponde a cada campo:
+      </p>
+      <div class="col-map" id="col-map"></div>
+    </div>
+    <div id="import-result-wrap"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn btn-blue btn-sm" id="btn-do-import" onclick="doImportarExcel()" style="display:none">
+        📥 Importar ahora
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarImport()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ LOGIN ════════════════════ -->
 <div class="screen active" id="screen-login">
   <div class="login-card">
-    <div class="login-hero" style="position:relative">
+    <div class="login-hero">
       <span class="kanji">空手道</span>
       <div style="font-size:2.2rem">🥋</div>
       <h1>IKA ECUADOR</h1>
@@ -234,10 +327,8 @@ tbody td{padding:9px 12px;vertical-align:middle}
     </div>
     <div class="login-tabs">
       <button class="login-tab active" id="tab-login" onclick="showTab('login')">Iniciar Sesión</button>
-      <button class="login-tab" id="tab-reg" onclick="showTab('reg')">Registrarse</button>
+      <button class="login-tab" id="tab-reg"   onclick="showTab('reg')">Registrarse</button>
     </div>
-
-    <!-- Login -->
     <div id="pane-login" class="login-body">
       <div class="form-group">
         <label>Cédula del Responsable</label>
@@ -245,46 +336,31 @@ tbody td{padding:9px 12px;vertical-align:middle}
       </div>
       <div class="form-group">
         <label>Contraseña</label>
-        <input type="password" id="l-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        <input type="password" id="l-pw" placeholder="••••••••"
+               onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div id="l-err" style="color:var(--peligro);font-size:.8rem;margin-bottom:10px;min-height:18px"></div>
       <button class="btn-primary" onclick="doLogin()">🔓  INGRESAR</button>
     </div>
-
-    <!-- Registro -->
     <div id="pane-reg" class="login-body" style="display:none">
       <div id="reg-form">
-        <div class="form-group">
-          <label>Nombre del Club</label>
-          <input type="text" id="r-nombre" placeholder="Ej: Dojo Quito Karate">
-        </div>
-        <div class="form-group">
-          <label>Ciudad</label>
-          <input type="text" id="r-ciudad" placeholder="Ej: Quito">
-        </div>
+        <div class="form-group"><label>Nombre del Club</label>
+          <input type="text" id="r-nombre" placeholder="Ej: Dojo Quito Karate"></div>
+        <div class="form-group"><label>Ciudad</label>
+          <input type="text" id="r-ciudad" placeholder="Ej: Quito"></div>
         <div class="form-row">
-          <div class="form-group">
-            <label>Nombres del Responsable</label>
-            <input type="text" id="r-nombres" placeholder="Nombres">
-          </div>
-          <div class="form-group">
-            <label>Apellidos</label>
-            <input type="text" id="r-apellidos" placeholder="Apellidos">
-          </div>
+          <div class="form-group"><label>Nombres del Responsable</label>
+            <input type="text" id="r-nombres" placeholder="Nombres"></div>
+          <div class="form-group"><label>Apellidos</label>
+            <input type="text" id="r-apellidos" placeholder="Apellidos"></div>
         </div>
-        <div class="form-group">
-          <label>Cédula del Responsable</label>
-          <input type="text" id="r-cedula" placeholder="Ej: 1712345678" maxlength="20">
-        </div>
+        <div class="form-group"><label>Cédula del Responsable</label>
+          <input type="text" id="r-cedula" placeholder="Ej: 1712345678" maxlength="20"></div>
         <div class="form-row">
-          <div class="form-group">
-            <label>Contraseña</label>
-            <input type="password" id="r-pw1" placeholder="••••••••">
-          </div>
-          <div class="form-group">
-            <label>Confirmar</label>
-            <input type="password" id="r-pw2" placeholder="••••••••">
-          </div>
+          <div class="form-group"><label>Contraseña</label>
+            <input type="password" id="r-pw1" placeholder="••••••••"></div>
+          <div class="form-group"><label>Confirmar</label>
+            <input type="password" id="r-pw2" placeholder="••••••••"></div>
         </div>
         <div id="r-err" style="color:var(--peligro);font-size:.8rem;margin-bottom:10px;min-height:18px"></div>
         <button class="btn-primary" onclick="doRegistrar()">📋  ENVIAR SOLICITUD</button>
@@ -298,7 +374,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
   </div>
 </div>
 
-<!-- ════════════════════════════ HOME ════════════════════════════ -->
+<!-- ════════════════════ HOME ════════════════════ -->
 <div class="screen" id="screen-home">
   <div class="home-hero">
     <span class="kanji">空手道</span>
@@ -310,24 +386,19 @@ tbody td{padding:9px 12px;vertical-align:middle}
   </div>
   <div class="home-grid">
     <div class="home-btn" onclick="goTo('base')">
-      <span class="icon">📋</span>
-      <span class="label">BASE DE DATOS</span>
+      <span class="icon">📋</span><span class="label">BASE DE DATOS</span>
     </div>
     <div class="home-btn" onclick="goTo('buscar')">
-      <span class="icon">🔍</span>
-      <span class="label">BUSCAR POR CÉDULA</span>
+      <span class="icon">🔍</span><span class="label">BUSCAR POR CÉDULA</span>
     </div>
     <div class="home-btn" onclick="goTo('nuevo')">
-      <span class="icon">➕</span>
-      <span class="label">NUEVO AFILIADO</span>
+      <span class="icon">➕</span><span class="label">NUEVO AFILIADO</span>
     </div>
     <div class="home-btn" onclick="goTo('categorias')">
-      <span class="icon">⚙️</span>
-      <span class="label">GESTIONAR CATEGORÍAS</span>
+      <span class="icon">⚙️</span><span class="label">GESTIONAR CATEGORÍAS</span>
     </div>
     <div class="home-btn full" onclick="goTo('config')">
-      <span class="icon">🔧</span>
-      <span class="label">CONFIGURACIÓN</span>
+      <span class="icon">🔧</span><span class="label">CONFIGURACIÓN</span>
     </div>
   </div>
   <div class="home-footer">
@@ -336,7 +407,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
   </div>
 </div>
 
-<!-- ════════════════════════════ BASE DE DATOS ════════════════════════════ -->
+<!-- ════════════════════ BASE DE DATOS ════════════════════ -->
 <div class="screen" id="screen-base">
   <div class="g-header">
     <button class="btn-back" onclick="goHome()">← Inicio</button>
@@ -346,41 +417,45 @@ tbody td{padding:9px 12px;vertical-align:middle}
   <div class="content">
     <div class="btn-bar">
       <button class="btn btn-blue" onclick="goTo('nuevo')">➕ Nuevo Afiliado</button>
+      <button class="btn btn-ghost btn-sm feature-import" onclick="abrirImport()"
+              title="Importar desde Excel">📥 Importar Excel</button>
       <button class="btn btn-ghost btn-sm" onclick="loadMiembros()">🔄 Actualizar</button>
       <div class="search-bar" style="margin:0;flex:1">
-        <input type="text" id="base-search" placeholder="Filtrar por nombre, cédula, categoría..." oninput="filtrarTabla()">
+        <input type="text" id="base-search"
+               placeholder="Filtrar por nombre, cédula, categoría..."
+               oninput="filtrarTabla()">
       </div>
     </div>
     <div class="tbl-wrap">
-      <table id="tbl-base">
+      <table>
         <thead>
           <tr>
             <th>Nombres</th><th>Apellidos</th><th>Cédula</th>
-            <th>Categoría</th><th>Teléfono</th><th>F. Ingreso</th>
-            <th>Acciones</th>
+            <th>Categoría</th><th>Teléfono</th><th>F. Ingreso</th><th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="tbl-base-body"><tr><td colspan="7" class="spinner">Cargando...</td></tr></tbody>
+        <tbody id="tbl-base-body">
+          <tr><td colspan="7" class="spinner">Cargando...</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════ FICHA ════════════════════════════ -->
+<!-- ════════════════════ FICHA ════════════════════ -->
 <div class="screen" id="screen-ficha">
   <div class="g-header">
-    <button class="btn-back" id="ficha-back" onclick="goTo('base')">← Base de Datos</button>
+    <button class="btn-back" onclick="goTo('base')">← Base de Datos</button>
     <span class="logo">👤 FICHA DEL AFILIADO</span>
     <span class="club-name" id="ficha-club-name"></span>
   </div>
   <div class="content">
-    <!-- Ficha card -->
     <div class="ficha-card">
       <div class="ficha-header">
         <div class="ficha-avatar" id="ficha-avatar">👤</div>
         <div>
           <div class="ficha-nombre" id="ficha-nombre">—</div>
-          <div class="ficha-cat" id="ficha-cat">—</div>
+          <div class="ficha-cat"    id="ficha-cat">—</div>
         </div>
       </div>
       <div class="ficha-body">
@@ -396,19 +471,15 @@ tbody td{padding:9px 12px;vertical-align:middle}
         <div class="ficha-field"><label>ID Sistema</label><span id="fi-id" style="color:var(--texto-s)">—</span></div>
       </div>
       <div class="ficha-actions">
-        <button class="btn btn-blue btn-sm" id="btn-editar-ficha">✏️ Editar</button>
+        <button class="btn btn-blue btn-sm"   id="btn-editar-ficha">✏️ Editar</button>
         <button class="btn btn-danger btn-sm" id="btn-eliminar-ficha">🗑️ Eliminar</button>
       </div>
     </div>
-
-    <!-- Historial -->
-    <div class="hist-section">
+    <div>
       <div class="hist-title">
         <span>📂 HISTORIAL</span>
         <button class="btn btn-blue btn-sm" onclick="toggleHistForm()">➕ Agregar Entrada</button>
       </div>
-
-      <!-- Formulario nuevo historial (oculto por defecto) -->
       <div class="hist-form" id="hist-form" style="display:none">
         <h3>Nueva entrada de historial</h3>
         <div class="form-group">
@@ -419,17 +490,16 @@ tbody td{padding:9px 12px;vertical-align:middle}
         </div>
         <div id="hist-campos-wrap"></div>
         <div style="display:flex;gap:10px;margin-top:14px">
-          <button class="btn btn-blue btn-sm" onclick="guardarHistorial()">💾 Guardar</button>
+          <button class="btn btn-blue btn-sm"  onclick="guardarHistorial()">💾 Guardar</button>
           <button class="btn btn-ghost btn-sm" onclick="toggleHistForm()">Cancelar</button>
         </div>
       </div>
-
       <div id="hist-list"><div class="spinner">Cargando historial...</div></div>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════ FORM AFILIADO ════════════════════════════ -->
+<!-- ════════════════════ FORM AFILIADO ════════════════════ -->
 <div class="screen" id="screen-nuevo">
   <div class="g-header">
     <button class="btn-back" onclick="goTo('base')">← Base de Datos</button>
@@ -439,54 +509,29 @@ tbody td{padding:9px 12px;vertical-align:middle}
   <div class="content">
     <div class="form-card">
       <div class="form-grid">
-        <div class="form-group">
-          <label>Nombres *</label>
-          <input type="text" id="f-nombres" placeholder="Nombres completos">
-        </div>
-        <div class="form-group">
-          <label>Apellidos *</label>
-          <input type="text" id="f-apellidos" placeholder="Apellidos completos">
-        </div>
-        <div class="form-group">
-          <label>Cédula *</label>
-          <input type="text" id="f-cedula" placeholder="Número de cédula" maxlength="20">
-        </div>
-        <div class="form-group">
-          <label>Categoría</label>
-          <select id="f-categoria">
-            <option value="">— Seleccioná —</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Teléfono</label>
-          <input type="text" id="f-telefono" placeholder="Ej: 0991234567">
-        </div>
-        <div class="form-group">
-          <label>Correo Electrónico</label>
-          <input type="email" id="f-correo" placeholder="correo@ejemplo.com">
-        </div>
-        <div class="form-group">
-          <label>Ciudad de Nacimiento</label>
-          <input type="text" id="f-cnac" placeholder="Ej: Quito">
-        </div>
-        <div class="form-group">
-          <label>Ciudad de Residencia</label>
-          <input type="text" id="f-cres" placeholder="Ej: Quito">
-        </div>
-        <div class="form-group">
-          <label>Fecha de Nacimiento</label>
-          <input type="date" id="f-fnac">
-        </div>
-        <div class="form-group">
-          <label>Fecha de Ingreso</label>
-          <input type="date" id="f-fing">
-        </div>
-        <div class="form-group form-full">
-          <label>Dirección</label>
-          <input type="text" id="f-dir" placeholder="Dirección completa">
-        </div>
-        <div class="form-group form-full">
-          <label>Género</label>
+        <div class="form-group"><label>Nombres *</label>
+          <input type="text" id="f-nombres" placeholder="Nombres completos"></div>
+        <div class="form-group"><label>Apellidos *</label>
+          <input type="text" id="f-apellidos" placeholder="Apellidos completos"></div>
+        <div class="form-group"><label>Cédula *</label>
+          <input type="text" id="f-cedula" placeholder="Número de cédula" maxlength="20"></div>
+        <div class="form-group"><label>Categoría</label>
+          <select id="f-categoria"><option value="">— Seleccioná —</option></select></div>
+        <div class="form-group"><label>Teléfono</label>
+          <input type="text" id="f-telefono" placeholder="Ej: 0991234567"></div>
+        <div class="form-group"><label>Correo Electrónico</label>
+          <input type="email" id="f-correo" placeholder="correo@ejemplo.com"></div>
+        <div class="form-group"><label>Ciudad de Nacimiento</label>
+          <input type="text" id="f-cnac" placeholder="Ej: Quito"></div>
+        <div class="form-group"><label>Ciudad de Residencia</label>
+          <input type="text" id="f-cres" placeholder="Ej: Quito"></div>
+        <div class="form-group"><label>Fecha de Nacimiento</label>
+          <input type="date" id="f-fnac"></div>
+        <div class="form-group"><label>Fecha de Ingreso</label>
+          <input type="date" id="f-fing"></div>
+        <div class="form-group form-full"><label>Dirección</label>
+          <input type="text" id="f-dir" placeholder="Dirección completa"></div>
+        <div class="form-group form-full"><label>Género</label>
           <div class="radio-group">
             <label><input type="radio" name="genero" value="Hombre" id="f-hombre"> Hombre</label>
             <label><input type="radio" name="genero" value="Mujer"  id="f-mujer">  Mujer</label>
@@ -494,14 +539,14 @@ tbody td{padding:9px 12px;vertical-align:middle}
         </div>
       </div>
       <div style="display:flex;gap:12px;margin-top:22px">
-        <button class="btn btn-blue" onclick="guardarMiembro()">💾 GUARDAR AFILIADO</button>
+        <button class="btn btn-blue"  onclick="guardarMiembro()">💾 GUARDAR AFILIADO</button>
         <button class="btn btn-ghost" onclick="goTo('base')">Cancelar</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════ BUSCAR ════════════════════════════ -->
+<!-- ════════════════════ BUSCAR ════════════════════ -->
 <div class="screen" id="screen-buscar">
   <div class="g-header">
     <button class="btn-back" onclick="goHome()">← Inicio</button>
@@ -519,7 +564,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
   </div>
 </div>
 
-<!-- ════════════════════════════ CATEGORÍAS ════════════════════════════ -->
+<!-- ════════════════════ CATEGORÍAS ════════════════════ -->
 <div class="screen" id="screen-categorias">
   <div class="g-header">
     <button class="btn-back" onclick="goHome()">← Inicio</button>
@@ -527,8 +572,13 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <span class="club-name" id="cat-club-name"></span>
   </div>
   <div class="content">
-    <div class="search-bar" style="max-width:400px;margin-bottom:16px">
-      <input type="text" id="cat-nueva" placeholder="Nueva categoría (ej: Cinturón Negro 1er Dan)"
+    <p style="font-size:.8rem;color:var(--texto-s);margin-bottom:14px">
+      Las categorías <span class="badge-fuente badge-global">IKA Global</span> son compartidas con todos los clubs.
+      Podés agregar tus propias categorías <span class="badge-fuente badge-club">Tu Club</span> adicionales.
+    </p>
+    <div class="search-bar" style="max-width:480px;margin-bottom:16px">
+      <input type="text" id="cat-nueva"
+             placeholder="Nueva categoría (ej: Cinturón Negro 1er Dan)"
              onkeydown="if(event.key==='Enter')agregarCategoria()">
       <button class="btn btn-blue" onclick="agregarCategoria()">➕ Agregar</button>
     </div>
@@ -537,7 +587,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
   </div>
 </div>
 
-<!-- ════════════════════════════ CONFIGURACIÓN ════════════════════════════ -->
+<!-- ════════════════════ CONFIGURACIÓN ════════════════════ -->
 <div class="screen" id="screen-config">
   <div class="g-header">
     <button class="btn-back" onclick="goHome()">← Inicio</button>
@@ -546,33 +596,46 @@ tbody td{padding:9px 12px;vertical-align:middle}
   </div>
   <div class="content">
 
+    <!-- Tema visual -->
+    <div class="config-section">
+      <h3>🎨 Apariencia</h3>
+      <div class="tema-toggle">
+        <span id="tema-label">🌙 Modo oscuro</span>
+        <label class="toggle-switch" style="margin-left:auto">
+          <input type="checkbox" id="tema-chk" onchange="toggleTema()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <p style="font-size:.75rem;color:var(--texto-s)">
+        Oscuro: azul marino profesional · Claro: vino y beige elegante
+      </p>
+    </div>
+
+    <!-- Datos del club -->
     <div class="config-section">
       <h3>🏫 Datos del Club</h3>
-      <div class="form-group">
-        <label>Nombre del Club</label>
-        <input type="text" id="cfg-nombre" placeholder="Nombre del club">
-      </div>
-      <div class="form-group">
-        <label>Ciudad</label>
-        <input type="text" id="cfg-ciudad" placeholder="Ciudad">
+      <div class="form-grid">
+        <div class="form-group"><label>Nombre del Club</label>
+          <input type="text" id="cfg-nombre" placeholder="Nombre del club"></div>
+        <div class="form-group"><label>Ciudad</label>
+          <input type="text" id="cfg-ciudad" placeholder="Ciudad"></div>
+        <div class="form-group"><label>Teléfono de Contacto</label>
+          <input type="text" id="cfg-telefono" placeholder="Ej: 0991234567"></div>
+        <div class="form-group form-full"><label>Dirección del Club</label>
+          <input type="text" id="cfg-direccion" placeholder="Dirección física del club"></div>
       </div>
       <button class="btn btn-blue btn-sm" onclick="guardarInfoClub()">💾 Guardar Datos</button>
     </div>
 
+    <!-- Cambiar contraseña -->
     <div class="config-section">
       <h3>🔑 Cambiar Contraseña</h3>
-      <div class="form-group">
-        <label>Contraseña Actual</label>
-        <input type="password" id="cfg-pw-actual" placeholder="••••••••">
-      </div>
-      <div class="form-group">
-        <label>Nueva Contraseña</label>
-        <input type="password" id="cfg-pw-nueva" placeholder="••••••••">
-      </div>
-      <div class="form-group">
-        <label>Confirmar Nueva Contraseña</label>
-        <input type="password" id="cfg-pw-conf" placeholder="••••••••">
-      </div>
+      <div class="form-group"><label>Contraseña Actual</label>
+        <input type="password" id="cfg-pw-actual" placeholder="••••••••"></div>
+      <div class="form-group"><label>Nueva Contraseña</label>
+        <input type="password" id="cfg-pw-nueva" placeholder="••••••••"></div>
+      <div class="form-group"><label>Confirmar Nueva Contraseña</label>
+        <input type="password" id="cfg-pw-conf" placeholder="••••••••"></div>
       <button class="btn btn-blue btn-sm" onclick="cambiarPassword()">🔐 Cambiar Contraseña</button>
     </div>
 
@@ -584,33 +647,35 @@ tbody td{padding:9px 12px;vertical-align:middle}
 // ESTADO GLOBAL
 // ══════════════════════════════════════════════════════════════
 const S = {
-  token:       sessionStorage.getItem('club_token') || '',
-  club:        null,
-  miembros:    [],
-  categorias:  [],
-  plantillas:  [],
-  currentId:   null,   // ID del miembro en ficha
-  editingId:   null,   // null = nuevo, number = editar
+  token:      sessionStorage.getItem('club_token') || '',
+  club:       null,
+  miembros:   [],
+  categorias: [],
+  plantillas: [],
+  currentId:  null,
+  editingId:  null,
+  excelData:  null,  // filas parseadas del Excel
+  excelCols:  [],    // nombres de columnas del archivo
 };
 
 // ── API helper ────────────────────────────────────────────────
 async function api(method, path, body = null) {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {'Content-Type':'application/json'};
   if (S.token) headers['Authorization'] = 'Bearer ' + S.token;
-  const opts = { method, headers };
+  const opts = {method, headers};
   if (body) opts.body = JSON.stringify(body);
   try {
     const res  = await fetch(path, opts);
     const data = await res.json().catch(() => ({}));
     if (res.status === 401) { doLogout(); return null; }
-    return { ok: res.ok, status: res.status, data };
+    return {ok: res.ok, status: res.status, data};
   } catch(e) {
-    return { ok: false, data: { error: 'Error de conexión con el servidor' } };
+    return {ok: false, data: {error: 'Error de conexión con el servidor'}};
   }
 }
 
 // ── Toast ─────────────────────────────────────────────────────
-function toast(msg, type = 'ok') {
+function toast(msg, type='ok') {
   const el = document.createElement('div');
   el.className = `toast-item toast-${type}`;
   el.textContent = msg;
@@ -618,28 +683,28 @@ function toast(msg, type = 'ok') {
   setTimeout(() => {
     el.style.animation = 'fadeOut .4s ease forwards';
     setTimeout(() => el.remove(), 400);
-  }, 3500);
+  }, 3800);
 }
 
 // ── Navegación ────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + id);
-  if (el) { el.classList.add('active'); el.scrollTop = 0; }
+  if (el) { el.classList.add('active'); window.scrollTo(0,0); }
 }
-
 function goHome() { showScreen('home'); }
-
 async function goTo(screen) {
   showScreen(screen);
   updateClubNames();
   if (screen === 'base')       await loadMiembros();
   if (screen === 'nuevo')      await prepareForm(null);
   if (screen === 'categorias') await loadCategorias();
-  if (screen === 'buscar')     { document.getElementById('b-cedula').value=''; document.getElementById('buscar-result').innerHTML=''; }
   if (screen === 'config')     await loadConfig();
+  if (screen === 'buscar') {
+    document.getElementById('b-cedula').value = '';
+    document.getElementById('buscar-result').innerHTML = '';
+  }
 }
-
 function updateClubNames() {
   const n = S.club ? S.club.nombre : '';
   ['base','ficha','form','buscar','cat','cfg'].forEach(id => {
@@ -648,12 +713,30 @@ function updateClubNames() {
   });
 }
 
-// ── Tabs login/register ───────────────────────────────────────
+// ── Login tabs ───────────────────────────────────────────────
 function showTab(tab) {
   document.getElementById('pane-login').style.display = tab==='login' ? '' : 'none';
   document.getElementById('pane-reg').style.display   = tab==='reg'   ? '' : 'none';
   document.getElementById('tab-login').classList.toggle('active', tab==='login');
   document.getElementById('tab-reg').classList.toggle('active',   tab==='reg');
+}
+
+// ══════════════════════════════════════════════════════════════
+// TEMA
+// ══════════════════════════════════════════════════════════════
+function toggleTema() {
+  const claro = document.getElementById('tema-chk').checked;
+  document.body.classList.toggle('tema-claro', claro);
+  document.getElementById('tema-label').textContent = claro ? '☀️ Modo claro' : '🌙 Modo oscuro';
+  localStorage.setItem('club_tema', claro ? 'claro' : 'oscuro');
+}
+function aplicarTemaGuardado() {
+  const guardado = localStorage.getItem('club_tema');
+  if (guardado === 'claro') {
+    document.getElementById('tema-chk').checked = true;
+    document.body.classList.add('tema-claro');
+    document.getElementById('tema-label').textContent = '☀️ Modo claro';
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -665,7 +748,7 @@ async function doLogin() {
   const errEl  = document.getElementById('l-err');
   errEl.textContent = '';
   if (!cedula || !pw) { errEl.textContent = 'Ingresá tu cédula y contraseña.'; return; }
-  const r = await api('POST', '/club/login', { cedula, password: pw });
+  const r = await api('POST', '/club/login', {cedula, password: pw});
   if (!r) return;
   if (!r.ok) { errEl.textContent = r.data.error || 'Error al iniciar sesión.'; return; }
   S.token = r.data.token;
@@ -678,14 +761,14 @@ async function doLogin() {
 
 async function doRegistrar() {
   const d = {
-    nombre:         document.getElementById('r-nombre').value.trim(),
-    ciudad:         document.getElementById('r-ciudad').value.trim(),
-    nombres_dueno:  document.getElementById('r-nombres').value.trim(),
-    apellidos_dueno:document.getElementById('r-apellidos').value.trim(),
-    cedula_dueno:   document.getElementById('r-cedula').value.trim(),
-    password:       document.getElementById('r-pw1').value.trim(),
+    nombre:          document.getElementById('r-nombre').value.trim(),
+    ciudad:          document.getElementById('r-ciudad').value.trim(),
+    nombres_dueno:   document.getElementById('r-nombres').value.trim(),
+    apellidos_dueno: document.getElementById('r-apellidos').value.trim(),
+    cedula_dueno:    document.getElementById('r-cedula').value.trim(),
+    password:        document.getElementById('r-pw1').value.trim(),
   };
-  const pw2 = document.getElementById('r-pw2').value.trim();
+  const pw2   = document.getElementById('r-pw2').value.trim();
   const errEl = document.getElementById('r-err');
   errEl.textContent = '';
   if (!Object.values(d).every(v => v)) { errEl.textContent = 'Todos los campos son obligatorios.'; return; }
@@ -716,7 +799,10 @@ async function loadMiembros() {
   const tbody = document.getElementById('tbl-base-body');
   tbody.innerHTML = '<tr><td colspan="7" class="spinner">Cargando...</td></tr>';
   const r = await api('GET', '/club/miembros');
-  if (!r || !r.ok) { tbody.innerHTML = '<tr><td colspan="7" style="color:var(--peligro);padding:20px;text-align:center">Error al cargar miembros.</td></tr>'; return; }
+  if (!r || !r.ok) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--peligro);padding:20px;text-align:center">Error al cargar miembros.</td></tr>';
+    return;
+  }
   S.miembros = r.data;
   renderTabla(S.miembros);
 }
@@ -729,30 +815,28 @@ function renderTabla(miembros) {
   }
   tbody.innerHTML = miembros.map(m => `
     <tr>
-      <td>${m.nombres}</td>
-      <td>${m.apellidos}</td>
-      <td style="font-family:monospace">${m.cedula || '—'}</td>
-      <td>${m.categoria || '—'}</td>
-      <td>${m.telefono || '—'}</td>
+      <td>${esc(m.nombres)}</td>
+      <td>${esc(m.apellidos)}</td>
+      <td style="font-family:monospace">${esc(m.cedula||'—')}</td>
+      <td>${esc(m.categoria||'—')}</td>
+      <td>${esc(m.telefono||'—')}</td>
       <td>${fmtDate(m.fecha_ingreso)}</td>
       <td class="tbl-actions">
         <button class="btn-tbl" onclick="verFicha(${m.id})">👁️ Ficha</button>
         <button class="btn-tbl" onclick="editarMiembro(${m.id})">✏️</button>
         <button class="btn-tbl danger" onclick="eliminarMiembro(${m.id},'${esc(m.nombres)} ${esc(m.apellidos)}')">🗑️</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 }
 
 function filtrarTabla() {
   const q = document.getElementById('base-search').value.toLowerCase();
-  const filtrados = S.miembros.filter(m =>
-    (m.nombres    || '').toLowerCase().includes(q) ||
-    (m.apellidos  || '').toLowerCase().includes(q) ||
-    (m.cedula     || '').toLowerCase().includes(q) ||
-    (m.categoria  || '').toLowerCase().includes(q)
-  );
-  renderTabla(filtrados);
+  renderTabla(S.miembros.filter(m =>
+    (m.nombres   ||'').toLowerCase().includes(q) ||
+    (m.apellidos ||'').toLowerCase().includes(q) ||
+    (m.cedula    ||'').toLowerCase().includes(q) ||
+    (m.categoria ||'').toLowerCase().includes(q)
+  ));
 }
 
 async function eliminarMiembro(id, nombre) {
@@ -762,6 +846,131 @@ async function eliminarMiembro(id, nombre) {
   if (!r.ok) { toast(r.data.error || 'Error al eliminar.', 'err'); return; }
   toast(`${nombre} eliminado correctamente.`);
   await loadMiembros();
+}
+
+// ══════════════════════════════════════════════════════════════
+// EXCEL IMPORT
+// ══════════════════════════════════════════════════════════════
+const CAMPOS_DESTINO = [
+  {key:'nombres',           label:'Nombres'},
+  {key:'apellidos',         label:'Apellidos'},
+  {key:'cedula',            label:'Cédula *'},
+  {key:'categoria',         label:'Categoría'},
+  {key:'telefono',          label:'Teléfono'},
+  {key:'correo',            label:'Correo'},
+  {key:'ciudad_nacimiento', label:'Ciudad Nacimiento'},
+  {key:'ciudad_residencia', label:'Ciudad Residencia'},
+  {key:'fecha_nacimiento',  label:'Fecha Nacimiento'},
+  {key:'fecha_ingreso',     label:'Fecha Ingreso'},
+  {key:'genero',            label:'Género (Hombre/Mujer)'},
+  {key:'direccion',         label:'Dirección'},
+];
+
+function abrirImport() {
+  document.getElementById('import-modal').classList.add('open');
+  document.getElementById('excel-file').value = '';
+  document.getElementById('excel-preview').style.display = 'none';
+  document.getElementById('col-map-wrap').style.display  = 'none';
+  document.getElementById('btn-do-import').style.display = 'none';
+  document.getElementById('import-result-wrap').innerHTML = '';
+  S.excelData = null; S.excelCols = [];
+}
+function cerrarImport() {
+  document.getElementById('import-modal').classList.remove('open');
+}
+
+function cargarExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb    = XLSX.read(e.target.result, {type:'binary', cellDates:true});
+      const ws    = wb.Sheets[wb.SheetNames[0]];
+      const filas = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if (!filas.length) { toast('El archivo está vacío o no tiene datos.','err'); return; }
+      S.excelData = filas;
+      S.excelCols = Object.keys(filas[0]);
+      // Preview
+      const prev = document.getElementById('excel-preview');
+      prev.style.display = '';
+      prev.innerHTML = `<strong>${filas.length} filas encontradas.</strong> Columnas: ${S.excelCols.join(', ')}`;
+      // Mapa de columnas
+      const wrap = document.getElementById('col-map-wrap');
+      wrap.style.display = '';
+      const colMap = document.getElementById('col-map');
+      const optsHtml = `<option value="">— No mapear —</option>` +
+        S.excelCols.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      colMap.innerHTML = CAMPOS_DESTINO.map(f => `
+        <div>
+          <label>${f.label}</label>
+          <select id="map-${f.key}">${optsHtml}</select>
+        </div>`).join('');
+      // Intentar auto-mapear por nombre similar
+      CAMPOS_DESTINO.forEach(f => {
+        const match = S.excelCols.find(c =>
+          c.toLowerCase().replace(/[\s_]/g,'').includes(f.key.replace(/_/g,'')) ||
+          f.key.replace(/_/g,'').includes(c.toLowerCase().replace(/[\s_]/g,''))
+        );
+        if (match) document.getElementById(`map-${f.key}`).value = match;
+      });
+      document.getElementById('btn-do-import').style.display = '';
+      document.getElementById('import-result-wrap').innerHTML = '';
+    } catch(err) {
+      toast('Error al leer el archivo Excel: ' + err.message, 'err');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function doImportarExcel() {
+  if (!S.excelData) { toast('Primero seleccioná un archivo.','err'); return; }
+  // Construir filas mapeadas
+  const miembros = S.excelData.map(fila => {
+    const obj = {};
+    CAMPOS_DESTINO.forEach(f => {
+      const colSel = document.getElementById(`map-${f.key}`).value;
+      let val = colSel ? (fila[colSel] ?? '') : '';
+      // Convertir fechas de objetos Date a string ISO
+      if (val instanceof Date) {
+        val = val.toISOString().split('T')[0];
+      } else {
+        val = String(val).trim();
+      }
+      obj[f.key] = val;
+    });
+    return obj;
+  }).filter(m => m.cedula); // descartar filas sin cédula
+
+  if (!miembros.length) {
+    toast('No se encontraron filas con cédula. Revisá el mapeo.','err'); return;
+  }
+
+  document.getElementById('btn-do-import').textContent = '⏳ Importando...';
+  document.getElementById('btn-do-import').disabled = true;
+
+  const r = await api('POST', '/club/importar_excel', {miembros});
+
+  document.getElementById('btn-do-import').textContent = '📥 Importar ahora';
+  document.getElementById('btn-do-import').disabled = false;
+
+  const wrap = document.getElementById('import-result-wrap');
+  if (!r || !r.ok) {
+    wrap.innerHTML = `<div class="import-result err">❌ Error: ${r ? r.data.error : 'Sin respuesta'}</div>`;
+    return;
+  }
+  const d = r.data;
+  wrap.innerHTML = `
+    <div class="import-result ok">
+      ✅ <strong>${d.importados}</strong> afiliados importados correctamente.<br>
+      ⚠️ <strong>${d.duplicados}</strong> ya existían (cédula duplicada, se saltaron).<br>
+      ${d.errores > 0 ? `❌ <strong>${d.errores}</strong> errores:<br>
+        <small>${(d.detalle_errores||[]).join('<br>')}</small>` : ''}
+    </div>`;
+  if (d.importados > 0) {
+    toast(`✅ ${d.importados} afiliados importados.`);
+    await loadMiembros();
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -777,14 +986,12 @@ async function verFicha(id) {
     const r = await api('GET', `/club/miembros/${id}`);
     if (r && r.ok) renderFicha(r.data);
   }
-  // Cargar plantillas y historial en paralelo
   loadPlantillas();
   loadHistorial(id);
-  // Botones ficha
   document.getElementById('btn-editar-ficha').onclick   = () => editarMiembro(id);
   document.getElementById('btn-eliminar-ficha').onclick = () => {
-    const m = S.miembros.find(x => x.id === id) || {};
-    eliminarMiembroDesde(`${m.nombres||''} ${m.apellidos||''}`.trim(), id);
+    const m2 = S.miembros.find(x => x.id === id) || {};
+    eliminarMiembroDesde(`${m2.nombres||''} ${m2.apellidos||''}`.trim(), id);
   };
 }
 
@@ -792,27 +999,26 @@ async function eliminarMiembroDesde(nombre, id) {
   if (!confirm(`¿Eliminar a ${nombre}?\n\nEsta acción no se puede deshacer.`)) return;
   const r = await api('DELETE', `/club/miembros/${id}`);
   if (!r) return;
-  if (!r.ok) { toast(r.data.error || 'Error al eliminar.', 'err'); return; }
+  if (!r.ok) { toast(r.data.error || 'Error al eliminar.','err'); return; }
   toast(`${nombre} eliminado correctamente.`);
   await loadMiembros();
   goTo('base');
 }
 
 function renderFicha(m) {
-  const nombre = `${m.nombres} ${m.apellidos}`.trim();
-  document.getElementById('ficha-nombre').textContent  = nombre;
-  document.getElementById('ficha-cat').textContent     = m.categoria || '—';
-  document.getElementById('ficha-avatar').textContent  = (m.genero === 'Mujer') ? '👩' : '🧑';
-  document.getElementById('fi-cedula').textContent     = m.cedula             || '—';
-  document.getElementById('fi-genero').textContent     = m.genero             || '—';
-  document.getElementById('fi-fnac').textContent       = fmtDate(m.fecha_nacimiento);
-  document.getElementById('fi-cnac').textContent       = m.ciudad_nacimiento  || '—';
-  document.getElementById('fi-cres').textContent       = m.ciudad_residencia  || '—';
-  document.getElementById('fi-tel').textContent        = m.telefono           || '—';
-  document.getElementById('fi-correo').textContent     = m.correo             || '—';
-  document.getElementById('fi-dir').textContent        = m.direccion          || '—';
-  document.getElementById('fi-fing').textContent       = fmtDate(m.fecha_ingreso);
-  document.getElementById('fi-id').textContent         = m.id;
+  document.getElementById('ficha-nombre').textContent = `${m.nombres} ${m.apellidos}`.trim();
+  document.getElementById('ficha-cat').textContent    = m.categoria || '—';
+  document.getElementById('ficha-avatar').textContent = m.genero === 'Mujer' ? '👩' : '🧑';
+  document.getElementById('fi-cedula').textContent    = m.cedula            || '—';
+  document.getElementById('fi-genero').textContent    = m.genero            || '—';
+  document.getElementById('fi-fnac').textContent      = fmtDate(m.fecha_nacimiento);
+  document.getElementById('fi-cnac').textContent      = m.ciudad_nacimiento || '—';
+  document.getElementById('fi-cres').textContent      = m.ciudad_residencia || '—';
+  document.getElementById('fi-tel').textContent       = m.telefono          || '—';
+  document.getElementById('fi-correo').textContent    = m.correo            || '—';
+  document.getElementById('fi-dir').textContent       = m.direccion         || '—';
+  document.getElementById('fi-fing').textContent      = fmtDate(m.fecha_ingreso);
+  document.getElementById('fi-id').textContent        = m.id;
 }
 
 async function loadPlantillas() {
@@ -820,7 +1026,6 @@ async function loadPlantillas() {
   const r = await api('GET', '/club/historial/plantillas');
   if (r && r.ok) { S.plantillas = r.data; buildPlantillaSelect(); }
 }
-
 function buildPlantillaSelect() {
   const sel = document.getElementById('hist-plt-sel');
   sel.innerHTML = '<option value="">— Seleccioná una plantilla —</option>';
@@ -829,7 +1034,6 @@ function buildPlantillaSelect() {
     opt.value = p.id; opt.textContent = p.nombre; sel.appendChild(opt);
   });
 }
-
 function buildHistFields() {
   const plt_id = document.getElementById('hist-plt-sel').value;
   const wrap   = document.getElementById('hist-campos-wrap');
@@ -838,18 +1042,15 @@ function buildHistFields() {
   const plt = S.plantillas.find(p => String(p.id) === String(plt_id));
   if (!plt) return;
   plt.campos.sort((a,b) => a.orden - b.orden).forEach(c => {
-    const g = document.createElement('div');
-    g.className = 'form-group';
-    const lbl  = document.createElement('label'); lbl.textContent = c.etiqueta;
-    const tipo = c.tipo === 'numero' ? 'number' : c.tipo === 'fecha' ? 'date' : 'text';
-    const inp  = document.createElement('input');
-    inp.type = tipo; inp.id = `hc-${c.id}`;
-    inp.placeholder = c.etiqueta;
+    const g2  = document.createElement('div'); g2.className = 'form-group';
+    const lbl = document.createElement('label'); lbl.textContent = c.etiqueta;
+    const tipo= c.tipo==='numero' ? 'number' : c.tipo==='fecha' ? 'date' : 'text';
+    const inp = document.createElement('input');
+    inp.type = tipo; inp.id = `hc-${c.id}`; inp.placeholder = c.etiqueta;
     inp.style.cssText = 'width:100%;background:var(--fondo);border:1px solid var(--borde);color:var(--texto);padding:9px 12px;border-radius:7px;font-size:.88rem;outline:none';
-    g.appendChild(lbl); g.appendChild(inp); wrap.appendChild(g);
+    g2.appendChild(lbl); g2.appendChild(inp); wrap.appendChild(g2);
   });
 }
-
 function toggleHistForm() {
   const f = document.getElementById('hist-form');
   f.style.display = f.style.display === 'none' ? '' : 'none';
@@ -858,13 +1059,11 @@ function toggleHistForm() {
     document.getElementById('hist-campos-wrap').innerHTML = '';
   }
 }
-
 async function guardarHistorial() {
   const plt_id = document.getElementById('hist-plt-sel').value;
-  if (!plt_id) { toast('Seleccioná una plantilla.', 'err'); return; }
+  if (!plt_id) { toast('Seleccioná una plantilla.','err'); return; }
   const plt    = S.plantillas.find(p => String(p.id) === String(plt_id));
   const valores = {};
-  let ok = true;
   plt.campos.forEach(c => {
     const el = document.getElementById(`hc-${c.id}`);
     valores[c.id] = el ? el.value : '';
@@ -873,12 +1072,11 @@ async function guardarHistorial() {
     socio_id: S.currentId, plantilla_id: parseInt(plt_id), valores
   });
   if (!r) return;
-  if (!r.ok) { toast(r.data.error || 'Error al guardar.', 'err'); return; }
+  if (!r.ok) { toast(r.data.error || 'Error al guardar.','err'); return; }
   toast('Entrada de historial guardada.');
   toggleHistForm();
   await loadHistorial(S.currentId);
 }
-
 async function loadHistorial(socio_id) {
   const wrap = document.getElementById('hist-list');
   wrap.innerHTML = '<div class="spinner">Cargando historial...</div>';
@@ -896,26 +1094,22 @@ async function loadHistorial(socio_id) {
         </div>
       </div>
       <div class="hist-entry-body">
-        ${reg.valores.map(v => `
+        ${reg.valores.map(v=>`
           <div class="hist-val">
             <label>${esc(v.etiqueta)}</label>
-            <span>${esc(v.valor) || '—'}</span>
+            <span>${esc(v.valor)||'—'}</span>
           </div>`).join('')}
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
-
 function toggleHistEntry(head) {
-  const body = head.nextElementSibling;
-  body.classList.toggle('open');
+  head.nextElementSibling.classList.toggle('open');
 }
-
 async function borrarHistorial(reg_id) {
   if (!confirm('¿Eliminar esta entrada del historial?')) return;
   const r = await api('DELETE', `/club/historial/${reg_id}`);
   if (!r) return;
-  if (!r.ok) { toast(r.data.error || 'Error.', 'err'); return; }
+  if (!r.ok) { toast(r.data.error || 'Error.','err'); return; }
   toast('Entrada eliminada.');
   await loadHistorial(S.currentId);
 }
@@ -927,22 +1121,16 @@ async function prepareForm(id) {
   S.editingId = id;
   document.getElementById('form-titulo').textContent = id ? '✏️ EDITAR AFILIADO' : '➕ NUEVO AFILIADO';
   limpiarForm();
-  // Cargar categorias en el select
   if (!S.categorias.length) await loadCategorias(true);
   fillCatSelect();
   if (id) {
     const m = S.miembros.find(x => x.id === id);
     if (m) fillForm(m);
-    else {
-      const r = await api('GET', `/club/miembros/${id}`);
-      if (r && r.ok) fillForm(r.data);
-    }
+    else { const r = await api('GET', `/club/miembros/${id}`); if (r&&r.ok) fillForm(r.data); }
   } else {
-    // Fecha ingreso default = hoy
     document.getElementById('f-fing').value = new Date().toISOString().split('T')[0];
   }
 }
-
 function fillCatSelect() {
   const sel = document.getElementById('f-categoria');
   const cur = sel.value;
@@ -953,23 +1141,21 @@ function fillCatSelect() {
   });
   sel.value = cur;
 }
-
 function fillForm(m) {
-  document.getElementById('f-nombres').value   = m.nombres             || '';
-  document.getElementById('f-apellidos').value = m.apellidos           || '';
-  document.getElementById('f-cedula').value    = m.cedula              || '';
-  document.getElementById('f-telefono').value  = m.telefono            || '';
-  document.getElementById('f-correo').value    = m.correo              || '';
-  document.getElementById('f-cnac').value      = m.ciudad_nacimiento   || '';
-  document.getElementById('f-cres').value      = m.ciudad_residencia   || '';
-  document.getElementById('f-dir').value       = m.direccion           || '';
-  document.getElementById('f-fnac').value      = m.fecha_nacimiento    || '';
-  document.getElementById('f-fing').value      = m.fecha_ingreso       || '';
-  document.getElementById('f-categoria').value = m.categoria           || '';
-  if (m.genero === 'Hombre') document.getElementById('f-hombre').checked = true;
-  if (m.genero === 'Mujer')  document.getElementById('f-mujer').checked  = true;
+  document.getElementById('f-nombres').value   = m.nombres            || '';
+  document.getElementById('f-apellidos').value = m.apellidos          || '';
+  document.getElementById('f-cedula').value    = m.cedula             || '';
+  document.getElementById('f-telefono').value  = m.telefono           || '';
+  document.getElementById('f-correo').value    = m.correo             || '';
+  document.getElementById('f-cnac').value      = m.ciudad_nacimiento  || '';
+  document.getElementById('f-cres').value      = m.ciudad_residencia  || '';
+  document.getElementById('f-dir').value       = m.direccion          || '';
+  document.getElementById('f-fnac').value      = m.fecha_nacimiento   || '';
+  document.getElementById('f-fing').value      = m.fecha_ingreso      || '';
+  document.getElementById('f-categoria').value = m.categoria          || '';
+  if (m.genero==='Hombre') document.getElementById('f-hombre').checked = true;
+  if (m.genero==='Mujer')  document.getElementById('f-mujer').checked  = true;
 }
-
 function limpiarForm() {
   ['f-nombres','f-apellidos','f-cedula','f-telefono','f-correo',
    'f-cnac','f-cres','f-dir','f-fnac','f-fing'].forEach(id => {
@@ -978,36 +1164,34 @@ function limpiarForm() {
   document.getElementById('f-categoria').value = '';
   document.querySelectorAll('input[name=genero]').forEach(r => r.checked = false);
 }
-
 async function guardarMiembro() {
   const genero_el = document.querySelector('input[name=genero]:checked');
   const body = {
-    nombres:            document.getElementById('f-nombres').value.trim(),
-    apellidos:          document.getElementById('f-apellidos').value.trim(),
-    cedula:             document.getElementById('f-cedula').value.trim(),
-    categoria:          document.getElementById('f-categoria').value,
-    telefono:           document.getElementById('f-telefono').value.trim(),
-    correo:             document.getElementById('f-correo').value.trim(),
-    ciudad_nacimiento:  document.getElementById('f-cnac').value.trim(),
-    ciudad_residencia:  document.getElementById('f-cres').value.trim(),
-    direccion:          document.getElementById('f-dir').value.trim(),
-    fecha_nacimiento:   document.getElementById('f-fnac').value,
-    fecha_ingreso:      document.getElementById('f-fing').value,
-    genero:             genero_el ? genero_el.value : '',
+    nombres:           document.getElementById('f-nombres').value.trim(),
+    apellidos:         document.getElementById('f-apellidos').value.trim(),
+    cedula:            document.getElementById('f-cedula').value.trim(),
+    categoria:         document.getElementById('f-categoria').value,
+    telefono:          document.getElementById('f-telefono').value.trim(),
+    correo:            document.getElementById('f-correo').value.trim(),
+    ciudad_nacimiento: document.getElementById('f-cnac').value.trim(),
+    ciudad_residencia: document.getElementById('f-cres').value.trim(),
+    direccion:         document.getElementById('f-dir').value.trim(),
+    fecha_nacimiento:  document.getElementById('f-fnac').value,
+    fecha_ingreso:     document.getElementById('f-fing').value,
+    genero:            genero_el ? genero_el.value : '',
   };
   if (!body.nombres || !body.apellidos || !body.cedula) {
-    toast('Nombres, apellidos y cédula son obligatorios.', 'err'); return;
+    toast('Nombres, apellidos y cédula son obligatorios.','err'); return;
   }
-  const method = S.editingId ? 'PUT' : 'POST';
+  const method = S.editingId ? 'PUT'  : 'POST';
   const path   = S.editingId ? `/club/miembros/${S.editingId}` : '/club/miembros';
   const r = await api(method, path, body);
   if (!r) return;
-  if (!r.ok) { toast(r.data.error || 'Error al guardar.', 'err'); return; }
+  if (!r.ok) { toast(r.data.error || 'Error al guardar.','err'); return; }
   toast(S.editingId ? 'Afiliado actualizado correctamente.' : 'Afiliado registrado correctamente.');
   await loadMiembros();
   goTo('base');
 }
-
 async function editarMiembro(id) {
   await prepareForm(id);
   showScreen('nuevo');
@@ -1043,8 +1227,8 @@ async function doBuscar() {
         <div class="ficha-field"><label>Teléfono</label><span>${esc(m.telefono||'—')}</span></div>
         <div class="ficha-field"><label>F. Nacimiento</label><span>${fmtDate(m.fecha_nacimiento)}</span></div>
         <div class="ficha-field"><label>F. Ingreso</label><span>${fmtDate(m.fecha_ingreso)}</span></div>
-        <div class="ficha-field"><label>Ciudad Nacimiento</label><span>${esc(m.ciudad_nacimiento||'—')}</span></div>
-        <div class="ficha-field"><label>Ciudad Residencia</label><span>${esc(m.ciudad_residencia||'—')}</span></div>
+        <div class="ficha-field"><label>Ciudad Nac.</label><span>${esc(m.ciudad_nacimiento||'—')}</span></div>
+        <div class="ficha-field"><label>Ciudad Res.</label><span>${esc(m.ciudad_residencia||'—')}</span></div>
         <div class="ficha-field"><label>Correo</label><span>${esc(m.correo||'—')}</span></div>
         <div class="ficha-field"><label>Dirección</label><span>${esc(m.direccion||'—')}</span></div>
       </div>
@@ -1052,14 +1236,13 @@ async function doBuscar() {
         <button class="btn btn-blue btn-sm" onclick="verFicha(${m.id})">📋 Ver Ficha Completa e Historial</button>
       </div>
     </div>`;
-  // Asegurarse que el miembro esté en el array
   if (!S.miembros.find(x => x.id === m.id)) S.miembros.push(m);
 }
 
 // ══════════════════════════════════════════════════════════════
 // CATEGORÍAS
 // ══════════════════════════════════════════════════════════════
-async function loadCategorias(silent = false) {
+async function loadCategorias(silent=false) {
   const wrap = document.getElementById('cat-list');
   if (!silent && wrap) wrap.innerHTML = '<div class="spinner">Cargando...</div>';
   const r = await api('GET', '/club/categorias');
@@ -1068,37 +1251,46 @@ async function loadCategorias(silent = false) {
     if (!silent) renderCategorias();
   }
 }
-
 function renderCategorias() {
   const wrap = document.getElementById('cat-list');
   if (!wrap) return;
   if (!S.categorias.length) {
-    wrap.innerHTML = '<div class="badge-empty">No hay categorías. Agregá la primera arriba.</div>'; return;
+    wrap.innerHTML = '<div class="badge-empty">No hay categorías.</div>'; return;
   }
   wrap.innerHTML = S.categorias.map(c => `
     <div class="cat-item">
       <span>${esc(c.nombre)}</span>
-      <button class="btn-tbl danger" onclick="eliminarCategoria(${c.id},'${esc(c.nombre)}')">🗑️ Eliminar</button>
+      <span class="badge-fuente ${c.fuente==='global' ? 'badge-global' : 'badge-club'}">
+        ${c.fuente==='global' ? 'IKA Global' : 'Tu Club'}
+      </span>
+      ${c.fuente==='club' ?
+        `<button class="btn-tbl danger" onclick="eliminarCategoria('${c.id_real}','${esc(c.nombre)}')">🗑️</button>` :
+        `<span style="font-size:.72rem;color:var(--texto-s)">solo lectura</span>`
+      }
     </div>`).join('');
 }
-
 async function agregarCategoria() {
   const input  = document.getElementById('cat-nueva');
   const nombre = input.value.trim();
-  if (!nombre) { toast('Ingresá un nombre para la categoría.', 'err'); return; }
-  const r = await api('POST', '/club/categorias', { nombre });
+  if (!nombre) { toast('Ingresá un nombre para la categoría.','err'); return; }
+  // Verificar duplicado local antes de llamar al servidor
+  const existe = S.categorias.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
+  if (existe) {
+    toast(`La categoría "${nombre}" ya está registrada${existe.fuente==='global'?' en IKA Global':' en tu club'}.`,'err');
+    return;
+  }
+  const r = await api('POST', '/club/categorias', {nombre});
   if (!r) return;
-  if (!r.ok) { toast(r.data.error || 'Error al agregar.', 'err'); return; }
+  if (!r.ok) { toast(r.data.error || 'Error al agregar.','err'); return; }
   toast(`Categoría "${nombre}" agregada.`);
   input.value = '';
   await loadCategorias();
 }
-
 async function eliminarCategoria(id, nombre) {
   if (!confirm(`¿Eliminar la categoría "${nombre}"?`)) return;
   const r = await api('DELETE', `/club/categorias/${id}`);
   if (!r) return;
-  if (!r.ok) { toast(r.data.error || 'Error al eliminar.', 'err'); return; }
+  if (!r.ok) { toast(r.data.error || 'Error al eliminar.','err'); return; }
   toast(`Categoría "${nombre}" eliminada.`);
   await loadCategorias();
 }
@@ -1110,38 +1302,40 @@ async function loadConfig() {
   const r = await api('GET', '/club/info');
   if (!r || !r.ok) return;
   S.club = r.data;
-  document.getElementById('cfg-nombre').value = r.data.nombre || '';
-  document.getElementById('cfg-ciudad').value = r.data.ciudad || '';
+  document.getElementById('cfg-nombre').value    = r.data.nombre    || '';
+  document.getElementById('cfg-ciudad').value    = r.data.ciudad    || '';
+  document.getElementById('cfg-telefono').value  = r.data.telefono  || '';
+  document.getElementById('cfg-direccion').value = r.data.direccion || '';
   updateClubNames();
 }
-
 async function guardarInfoClub() {
-  const nombre = document.getElementById('cfg-nombre').value.trim();
-  const ciudad = document.getElementById('cfg-ciudad').value.trim();
-  if (!nombre) { toast('El nombre del club es obligatorio.', 'err'); return; }
-  const r = await api('PUT', '/club/info', { nombre, ciudad });
+  const nombre    = document.getElementById('cfg-nombre').value.trim();
+  const ciudad    = document.getElementById('cfg-ciudad').value.trim();
+  const telefono  = document.getElementById('cfg-telefono').value.trim();
+  const direccion = document.getElementById('cfg-direccion').value.trim();
+  if (!nombre) { toast('El nombre del club es obligatorio.','err'); return; }
+  const r = await api('PUT', '/club/info', {nombre, ciudad, telefono, direccion});
   if (!r) return;
-  if (!r.ok) { toast(r.data.error || 'Error al guardar.', 'err'); return; }
-  S.club = { ...S.club, nombre, ciudad };
+  if (!r.ok) { toast(r.data.error || 'Error al guardar.','err'); return; }
+  S.club = {...S.club, nombre, ciudad, telefono, direccion};
   toast('Datos del club actualizados.');
   updateClubNames();
   document.getElementById('home-club-name').textContent = nombre;
 }
-
 async function cambiarPassword() {
   const actual = document.getElementById('cfg-pw-actual').value.trim();
   const nueva  = document.getElementById('cfg-pw-nueva').value.trim();
   const conf   = document.getElementById('cfg-pw-conf').value.trim();
-  if (!actual || !nueva) { toast('Ingresá la contraseña actual y la nueva.', 'err'); return; }
-  if (nueva !== conf) { toast('Las contraseñas nuevas no coinciden.', 'err'); return; }
-  const r = await api('PUT', '/club/password', { actual, nueva });
+  if (!actual || !nueva) { toast('Ingresá la contraseña actual y la nueva.','err'); return; }
+  if (nueva !== conf) { toast('Las contraseñas nuevas no coinciden.','err'); return; }
+  const r = await api('PUT', '/club/password', {actual, nueva});
   if (!r) return;
-  if (!r.ok) { toast(r.data.error || 'Error al cambiar contraseña.', 'err'); return; }
-  toast('Contraseña cambiada correctamente. Iniciá sesión de nuevo.', 'info');
+  if (!r.ok) { toast(r.data.error || 'Error al cambiar contraseña.','err'); return; }
+  toast('Contraseña cambiada. Iniciá sesión de nuevo.','info');
   ['cfg-pw-actual','cfg-pw-nueva','cfg-pw-conf'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  setTimeout(doLogout, 2000);
+  setTimeout(doLogout, 2200);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1149,17 +1343,12 @@ async function cambiarPassword() {
 // ══════════════════════════════════════════════════════════════
 function fmtDate(s) {
   if (!s) return '—';
-  try {
-    const [y,m,d] = s.split('-');
-    if (y && m && d) return `${d}/${m}/${y}`;
-    return s;
-  } catch(e) { return s; }
+  try { const [y,m,d] = s.split('-'); if(y&&m&&d) return `${d}/${m}/${y}`; return s; }
+  catch(e) { return s; }
 }
-
 function esc(str) {
   if (!str) return '';
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
@@ -1167,6 +1356,7 @@ function esc(str) {
 // INIT
 // ══════════════════════════════════════════════════════════════
 (async function init() {
+  aplicarTemaGuardado();
   if (S.token) {
     const r = await api('GET', '/club/info');
     if (r && r.ok) {
