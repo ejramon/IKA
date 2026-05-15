@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IKA Ecuador — Portal de Clubs</title>
+<style>
+:root {
+  --fondo:         #070E1C;
+  --sup:           #0C1829;
+  --sup2:          #112035;
+  --primario:      #14306A;
+  --primario-dark: #0C1F4A;
+  --acento:        #4A8FE8;
+  --acento-h:      #3070C8;
+  --texto:         #DDE8F8;
+  --texto-s:       #6E90B8;
+  --borde:         #182C48;
+  --exito:         #22C55E;
+  --peligro:       #EF4444;
+  --amarillo:      #F0C040;
+  --blanco:        #FFFFFF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:var(--texto);min-height:100vh;overflow-x:hidden}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast-item{padding:12px 18px;border-radius:8px;font-size:.88rem;font-weight:600;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);animation:slideIn .3s ease;max-width:320px}
+.toast-ok{background:#0D3320;border:1px solid var(--exito);color:var(--exito)}
+.toast-err{background:#2A0D0D;border:1px solid var(--peligro);color:var(--peligro)}
+.toast-info{background:#0D1E3A;border:1px solid var(--acento);color:var(--acento)}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{to{opacity:0;transform:translateX(120%)}}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ── HEADER GLOBAL ── */
+.g-header{background:var(--primario-dark);border-bottom:1px solid var(--borde);
+  display:flex;align-items:center;padding:10px 20px;gap:12px;min-height:54px}
+.g-header .logo{font-size:1.3rem;color:var(--acento);font-weight:800;letter-spacing:1px}
+.g-header .club-name{font-size:.85rem;color:var(--texto-s);margin-left:auto}
+.btn-back{background:none;border:1px solid var(--borde);color:var(--texto-s);
+  padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;transition:.2s}
+.btn-back:hover{border-color:var(--acento);color:var(--acento)}
+.btn-logout{background:none;border:none;color:var(--texto-s);cursor:pointer;
+  font-size:.82rem;padding:6px 10px;border-radius:6px;transition:.2s}
+.btn-logout:hover{color:var(--peligro)}
+
+/* ── LOGIN ── */
+#screen-login{align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--sup);border:1px solid var(--borde);border-radius:16px;
+  width:100%;max-width:420px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.login-hero{background:var(--primario-dark);padding:32px 28px 24px;text-align:center}
+.login-hero .kanji{font-size:2.4rem;opacity:.12;position:absolute;right:22px;top:16px;
+  font-family:serif;font-weight:700}
+.login-hero h1{font-size:1.6rem;font-weight:800;color:var(--acento);letter-spacing:2px}
+.login-hero p{font-size:.78rem;color:var(--texto-s);margin-top:4px}
+.login-tabs{display:flex;border-bottom:1px solid var(--borde)}
+.login-tab{flex:1;padding:12px;background:none;border:none;color:var(--texto-s);
+  cursor:pointer;font-size:.88rem;font-weight:600;transition:.2s;border-bottom:2px solid transparent}
+.login-tab.active{color:var(--acento);border-bottom-color:var(--acento);background:rgba(74,143,232,.06)}
+.login-body{padding:28px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.75rem;font-weight:700;color:var(--texto-s);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.form-group input,.form-group select{width:100%;background:var(--sup2);border:1px solid var(--borde);
+  color:var(--texto);padding:10px 12px;border-radius:8px;font-size:.9rem;outline:none;transition:.2s}
+.form-group input:focus,.form-group select:focus{border-color:var(--acento);
+  box-shadow:0 0 0 3px rgba(74,143,232,.15)}
+.form-group input::placeholder{color:var(--texto-s)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-primary{width:100%;background:var(--primario);color:var(--blanco);border:none;
+  padding:12px;border-radius:8px;font-weight:700;font-size:.92rem;cursor:pointer;
+  transition:.2s;letter-spacing:.5px}
+.btn-primary:hover{background:var(--acento-h)}
+.msg-pendiente{background:#0D1E3A;border:1px solid var(--acento);border-radius:8px;
+  padding:16px;text-align:center;color:var(--acento);font-size:.85rem;line-height:1.6;margin-top:8px}
+
+/* ── HOME ── */
+#screen-home .home-hero{background:var(--primario-dark);padding:36px 20px 28px;text-align:center;
+  position:relative;overflow:hidden}
+#screen-home .home-hero .kanji{font-size:5rem;opacity:.07;position:absolute;
+  right:30px;top:10px;font-family:serif;font-weight:700;color:var(--acento);pointer-events:none}
+#screen-home .home-hero h1{font-size:2rem;font-weight:800;color:var(--acento);letter-spacing:3px}
+#screen-home .home-hero h2{font-size:1rem;color:var(--blanco);margin-top:6px;font-weight:400}
+#screen-home .home-hero p{font-size:.78rem;color:var(--texto-s);margin-top:4px}
+.home-line{height:2px;background:var(--acento);width:140px;margin:14px auto 0}
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:28px 32px;
+  max-width:540px;margin:0 auto;flex:1;align-content:start}
+.home-btn{background:var(--sup);border:1px solid var(--borde);border-radius:12px;
+  padding:22px 16px;text-align:center;cursor:pointer;transition:.25s;
+  display:flex;flex-direction:column;align-items:center;gap:10px}
+.home-btn:hover{border-color:var(--acento);background:var(--sup2);
+  transform:translateY(-2px);box-shadow:0 8px 24px rgba(74,143,232,.15)}
+.home-btn .icon{font-size:1.8rem}
+.home-btn .label{font-size:.82rem;font-weight:700;color:var(--texto);letter-spacing:.3px}
+.home-btn.full{grid-column:1/-1}
+.home-footer{padding:16px;text-align:center;color:var(--texto-s);font-size:.72rem;
+  border-top:1px solid var(--borde)}
+
+/* ── CONTENT AREA ── */
+.content{flex:1;overflow-y:auto;padding:20px}
+.section-title{font-size:1.1rem;font-weight:700;color:var(--acento);margin-bottom:16px;
+  display:flex;align-items:center;gap:8px}
+.section-line{height:1px;background:var(--borde);margin:0 0 18px}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--borde)}
+table{width:100%;border-collapse:collapse;font-size:.83rem;min-width:700px}
+thead th{background:var(--primario);color:var(--blanco);padding:10px 12px;
+  text-align:left;font-weight:700;font-size:.78rem;letter-spacing:.3px}
+tbody tr{border-bottom:1px solid var(--borde);transition:.15s}
+tbody tr:nth-child(even){background:var(--sup)}
+tbody tr:nth-child(odd){background:var(--fondo)}
+tbody tr:hover{background:rgba(74,143,232,.08)}
+tbody td{padding:9px 12px;vertical-align:middle}
+.tbl-actions{display:flex;gap:6px;flex-wrap:nowrap}
+.btn-tbl{background:none;border:1px solid var(--borde);color:var(--texto-s);
+  padding:4px 9px;border-radius:5px;cursor:pointer;font-size:.78rem;transition:.15s;white-space:nowrap}
+.btn-tbl:hover{border-color:var(--acento);color:var(--acento)}
+.btn-tbl.danger:hover{border-color:var(--peligro);color:var(--peligro)}
+
+/* ── SEARCH BAR ── */
+.search-bar{display:flex;gap:10px;margin-bottom:14px}
+.search-bar input{flex:1;background:var(--sup2);border:1px solid var(--borde);color:var(--texto);
+  padding:9px 14px;border-radius:8px;font-size:.88rem;outline:none}
+.search-bar input:focus{border-color:var(--acento)}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 18px;border-radius:8px;font-weight:700;font-size:.84rem;
+  cursor:pointer;border:none;transition:.2s;letter-spacing:.3px}
+.btn-blue{background:var(--primario);color:var(--blanco)}
+.btn-blue:hover{background:var(--acento-h)}
+.btn-accent{background:var(--acento);color:#040D1A}
+.btn-accent:hover{background:var(--acento-h);color:var(--blanco)}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--peligro);border:1px solid var(--peligro)}
+.btn-danger:hover{background:var(--peligro);color:var(--blanco)}
+.btn-ghost{background:none;border:1px solid var(--borde);color:var(--texto-s)}
+.btn-ghost:hover{border-color:var(--acento);color:var(--acento)}
+.btn-sm{padding:6px 12px;font-size:.78rem}
+.btn-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+
+/* ── FICHA ── */
+.ficha-card{background:var(--sup);border:1px solid var(--borde);border-radius:12px;
+  overflow:hidden;margin-bottom:20px}
+.ficha-header{background:var(--primario-dark);padding:18px 22px;display:flex;
+  align-items:center;gap:16px}
+.ficha-avatar{width:52px;height:52px;border-radius:50%;background:var(--primario);
+  display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+  border:2px solid var(--acento);flex-shrink:0}
+.ficha-nombre{font-size:1.2rem;font-weight:700;color:var(--blanco)}
+.ficha-cat{display:inline-block;background:rgba(74,143,232,.2);color:var(--acento);
+  border:1px solid rgba(74,143,232,.3);border-radius:20px;padding:2px 12px;
+  font-size:.76rem;font-weight:700;margin-top:4px}
+.ficha-body{padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ficha-field label{font-size:.7rem;font-weight:700;color:var(--texto-s);
+  text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px}
+.ficha-field span{font-size:.9rem;color:var(--texto)}
+.ficha-actions{padding:14px 22px;border-top:1px solid var(--borde);
+  display:flex;gap:10px;background:rgba(0,0,0,.2)}
+
+/* ── HISTORIAL ── */
+.hist-section{margin-top:4px}
+.hist-title{font-size:.95rem;font-weight:700;color:var(--texto);margin-bottom:12px;
+  display:flex;align-items:center;justify-content:space-between}
+.hist-entry{background:var(--sup);border:1px solid var(--borde);border-radius:8px;
+  margin-bottom:10px;overflow:hidden}
+.hist-entry-head{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;transition:.15s}
+.hist-entry-head:hover{background:rgba(74,143,232,.06)}
+.hist-entry-plt{font-size:.8rem;font-weight:700;color:var(--acento)}
+.hist-entry-body{padding:12px 14px;border-top:1px solid var(--borde);
+  display:none;grid-template-columns:1fr 1fr;gap:10px}
+.hist-entry-body.open{display:grid}
+.hist-val label{font-size:.68rem;font-weight:700;color:var(--texto-s);
+  text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:2px}
+.hist-val span{font-size:.85rem;color:var(--texto)}
+.hist-form{background:var(--sup2);border:1px solid var(--borde);border-radius:10px;
+  padding:18px;margin-top:12px}
+.hist-form h3{font-size:.88rem;font-weight:700;color:var(--acento);margin-bottom:14px}
+
+/* ── FORM ── */
+.form-card{background:var(--sup);border:1px solid var(--borde);border-radius:12px;
+  padding:24px;max-width:680px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-full{grid-column:1/-1}
+.radio-group{display:flex;gap:20px;align-items:center;margin-top:4px}
+.radio-group label{display:flex;align-items:center;gap:6px;cursor:pointer;
+  font-size:.88rem;color:var(--texto)}
+.radio-group input[type=radio]{accent-color:var(--acento);width:15px;height:15px}
+.badge-empty{color:var(--texto-s);font-size:.83rem;font-style:italic;padding:10px 0}
+
+/* ── CATEGORIAS ── */
+.cat-list{display:flex;flex-direction:column;gap:8px;max-width:480px}
+.cat-item{background:var(--sup);border:1px solid var(--borde);border-radius:8px;
+  padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+.cat-item span{font-size:.88rem;color:var(--texto)}
+
+/* ── CONFIG ── */
+.config-section{background:var(--sup);border:1px solid var(--borde);border-radius:12px;
+  padding:22px;max-width:480px;margin-bottom:20px}
+.config-section h3{font-size:.9rem;font-weight:700;color:var(--acento);margin-bottom:14px;
+  padding-bottom:10px;border-bottom:1px solid var(--borde)}
+
+/* ── SPINNER ── */
+.spinner{text-align:center;padding:40px;color:var(--texto-s);font-size:.88rem}
+.spinner::before{content:'⏳ '}
+
+/* ── RESPONSIVE ── */
+@media(max-width:520px){
+  .home-grid{grid-template-columns:1fr;padding:20px}
+  .ficha-body{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ════════════════════════════ LOGIN ════════════════════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="login-card">
+    <div class="login-hero" style="position:relative">
+      <span class="kanji">空手道</span>
+      <div style="font-size:2.2rem">🥋</div>
+      <h1>IKA ECUADOR</h1>
+      <p>PORTAL DE CLUBS ASOCIADOS</p>
+    </div>
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-login" onclick="showTab('login')">Iniciar Sesión</button>
+      <button class="login-tab" id="tab-reg" onclick="showTab('reg')">Registrarse</button>
+    </div>
+
+    <!-- Login -->
+    <div id="pane-login" class="login-body">
+      <div class="form-group">
+        <label>Cédula del Responsable</label>
+        <input type="text" id="l-cedula" placeholder="Ej: 1712345678" maxlength="20">
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="l-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="l-err" style="color:var(--peligro);font-size:.8rem;margin-bottom:10px;min-height:18px"></div>
+      <button class="btn-primary" onclick="doLogin()">🔓  INGRESAR</button>
+    </div>
+
+    <!-- Registro -->
+    <div id="pane-reg" class="login-body" style="display:none">
+      <div id="reg-form">
+        <div class="form-group">
+          <label>Nombre del Club</label>
+          <input type="text" id="r-nombre" placeholder="Ej: Dojo Quito Karate">
+        </div>
+        <div class="form-group">
+          <label>Ciudad</label>
+          <input type="text" id="r-ciudad" placeholder="Ej: Quito">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombres del Responsable</label>
+            <input type="text" id="r-nombres" placeholder="Nombres">
+          </div>
+          <div class="form-group">
+            <label>Apellidos</label>
+            <input type="text" id="r-apellidos" placeholder="Apellidos">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Cédula del Responsable</label>
+          <input type="text" id="r-cedula" placeholder="Ej: 1712345678" maxlength="20">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="r-pw1" placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label>Confirmar</label>
+            <input type="password" id="r-pw2" placeholder="••••••••">
+          </div>
+        </div>
+        <div id="r-err" style="color:var(--peligro);font-size:.8rem;margin-bottom:10px;min-height:18px"></div>
+        <button class="btn-primary" onclick="doRegistrar()">📋  ENVIAR SOLICITUD</button>
+      </div>
+      <div id="reg-ok" class="msg-pendiente" style="display:none">
+        ✅ Solicitud enviada correctamente.<br><br>
+        El administrador de IKA Ecuador revisará y aprobará tu acceso.<br>
+        Una vez aprobado podrás iniciar sesión con tu cédula y contraseña.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ HOME ════════════════════════════ -->
+<div class="screen" id="screen-home">
+  <div class="home-hero">
+    <span class="kanji">空手道</span>
+    <div style="font-size:2.2rem">🥋</div>
+    <h1>IKA ECUADOR</h1>
+    <h2 id="home-club-name">— Portal de Club —</h2>
+    <p>Sistema de Gestión de Afiliados</p>
+    <div class="home-line"></div>
+  </div>
+  <div class="home-grid">
+    <div class="home-btn" onclick="goTo('base')">
+      <span class="icon">📋</span>
+      <span class="label">BASE DE DATOS</span>
+    </div>
+    <div class="home-btn" onclick="goTo('buscar')">
+      <span class="icon">🔍</span>
+      <span class="label">BUSCAR POR CÉDULA</span>
+    </div>
+    <div class="home-btn" onclick="goTo('nuevo')">
+      <span class="icon">➕</span>
+      <span class="label">NUEVO AFILIADO</span>
+    </div>
+    <div class="home-btn" onclick="goTo('categorias')">
+      <span class="icon">⚙️</span>
+      <span class="label">GESTIONAR CATEGORÍAS</span>
+    </div>
+    <div class="home-btn full" onclick="goTo('config')">
+      <span class="icon">🔧</span>
+      <span class="label">CONFIGURACIÓN</span>
+    </div>
+  </div>
+  <div class="home-footer">
+    <button class="btn-logout" onclick="doLogout()">🚪 Cerrar Sesión</button><br>
+    IKA Ecuador · Portal de Clubs · Sistema de Gestión
+  </div>
+</div>
+
+<!-- ════════════════════════════ BASE DE DATOS ════════════════════════════ -->
+<div class="screen" id="screen-base">
+  <div class="g-header">
+    <button class="btn-back" onclick="goHome()">← Inicio</button>
+    <span class="logo">📋 BASE DE DATOS</span>
+    <span class="club-name" id="base-club-name"></span>
+  </div>
+  <div class="content">
+    <div class="btn-bar">
+      <button class="btn btn-blue" onclick="goTo('nuevo')">➕ Nuevo Afiliado</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadMiembros()">🔄 Actualizar</button>
+      <div class="search-bar" style="margin:0;flex:1">
+        <input type="text" id="base-search" placeholder="Filtrar por nombre, cédula, categoría..." oninput="filtrarTabla()">
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table id="tbl-base">
+        <thead>
+          <tr>
+            <th>Nombres</th><th>Apellidos</th><th>Cédula</th>
+            <th>Categoría</th><th>Teléfono</th><th>F. Ingreso</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-base-body"><tr><td colspan="7" class="spinner">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ FICHA ════════════════════════════ -->
+<div class="screen" id="screen-ficha">
+  <div class="g-header">
+    <button class="btn-back" id="ficha-back" onclick="goTo('base')">← Base de Datos</button>
+    <span class="logo">👤 FICHA DEL AFILIADO</span>
+    <span class="club-name" id="ficha-club-name"></span>
+  </div>
+  <div class="content">
+    <!-- Ficha card -->
+    <div class="ficha-card">
+      <div class="ficha-header">
+        <div class="ficha-avatar" id="ficha-avatar">👤</div>
+        <div>
+          <div class="ficha-nombre" id="ficha-nombre">—</div>
+          <div class="ficha-cat" id="ficha-cat">—</div>
+        </div>
+      </div>
+      <div class="ficha-body">
+        <div class="ficha-field"><label>Cédula</label><span id="fi-cedula">—</span></div>
+        <div class="ficha-field"><label>Género</label><span id="fi-genero">—</span></div>
+        <div class="ficha-field"><label>Fecha Nacimiento</label><span id="fi-fnac">—</span></div>
+        <div class="ficha-field"><label>Ciudad Nacimiento</label><span id="fi-cnac">—</span></div>
+        <div class="ficha-field"><label>Ciudad Residencia</label><span id="fi-cres">—</span></div>
+        <div class="ficha-field"><label>Teléfono</label><span id="fi-tel">—</span></div>
+        <div class="ficha-field"><label>Correo</label><span id="fi-correo">—</span></div>
+        <div class="ficha-field"><label>Dirección</label><span id="fi-dir">—</span></div>
+        <div class="ficha-field"><label>Fecha Ingreso</label><span id="fi-fing">—</span></div>
+        <div class="ficha-field"><label>ID Sistema</label><span id="fi-id" style="color:var(--texto-s)">—</span></div>
+      </div>
+      <div class="ficha-actions">
+        <button class="btn btn-blue btn-sm" id="btn-editar-ficha">✏️ Editar</button>
+        <button class="btn btn-danger btn-sm" id="btn-eliminar-ficha">🗑️ Eliminar</button>
+      </div>
+    </div>
+
+    <!-- Historial -->
+    <div class="hist-section">
+      <div class="hist-title">
+        <span>📂 HISTORIAL</span>
+        <button class="btn btn-blue btn-sm" onclick="toggleHistForm()">➕ Agregar Entrada</button>
+      </div>
+
+      <!-- Formulario nuevo historial (oculto por defecto) -->
+      <div class="hist-form" id="hist-form" style="display:none">
+        <h3>Nueva entrada de historial</h3>
+        <div class="form-group">
+          <label>Plantilla</label>
+          <select id="hist-plt-sel" onchange="buildHistFields()">
+            <option value="">— Seleccioná una plantilla —</option>
+          </select>
+        </div>
+        <div id="hist-campos-wrap"></div>
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button class="btn btn-blue btn-sm" onclick="guardarHistorial()">💾 Guardar</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleHistForm()">Cancelar</button>
+        </div>
+      </div>
+
+      <div id="hist-list"><div class="spinner">Cargando historial...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ FORM AFILIADO ════════════════════════════ -->
+<div class="screen" id="screen-nuevo">
+  <div class="g-header">
+    <button class="btn-back" onclick="goTo('base')">← Base de Datos</button>
+    <span class="logo" id="form-titulo">➕ NUEVO AFILIADO</span>
+    <span class="club-name" id="form-club-name"></span>
+  </div>
+  <div class="content">
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nombres *</label>
+          <input type="text" id="f-nombres" placeholder="Nombres completos">
+        </div>
+        <div class="form-group">
+          <label>Apellidos *</label>
+          <input type="text" id="f-apellidos" placeholder="Apellidos completos">
+        </div>
+        <div class="form-group">
+          <label>Cédula *</label>
+          <input type="text" id="f-cedula" placeholder="Número de cédula" maxlength="20">
+        </div>
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="f-categoria">
+            <option value="">— Seleccioná —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="text" id="f-telefono" placeholder="Ej: 0991234567">
+        </div>
+        <div class="form-group">
+          <label>Correo Electrónico</label>
+          <input type="email" id="f-correo" placeholder="correo@ejemplo.com">
+        </div>
+        <div class="form-group">
+          <label>Ciudad de Nacimiento</label>
+          <input type="text" id="f-cnac" placeholder="Ej: Quito">
+        </div>
+        <div class="form-group">
+          <label>Ciudad de Residencia</label>
+          <input type="text" id="f-cres" placeholder="Ej: Quito">
+        </div>
+        <div class="form-group">
+          <label>Fecha de Nacimiento</label>
+          <input type="date" id="f-fnac">
+        </div>
+        <div class="form-group">
+          <label>Fecha de Ingreso</label>
+          <input type="date" id="f-fing">
+        </div>
+        <div class="form-group form-full">
+          <label>Dirección</label>
+          <input type="text" id="f-dir" placeholder="Dirección completa">
+        </div>
+        <div class="form-group form-full">
+          <label>Género</label>
+          <div class="radio-group">
+            <label><input type="radio" name="genero" value="Hombre" id="f-hombre"> Hombre</label>
+            <label><input type="radio" name="genero" value="Mujer"  id="f-mujer">  Mujer</label>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:22px">
+        <button class="btn btn-blue" onclick="guardarMiembro()">💾 GUARDAR AFILIADO</button>
+        <button class="btn btn-ghost" onclick="goTo('base')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ BUSCAR ════════════════════════════ -->
+<div class="screen" id="screen-buscar">
+  <div class="g-header">
+    <button class="btn-back" onclick="goHome()">← Inicio</button>
+    <span class="logo">🔍 BUSCAR POR CÉDULA</span>
+    <span class="club-name" id="buscar-club-name"></span>
+  </div>
+  <div class="content" style="max-width:520px">
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Número de Cédula</label>
+      <input type="text" id="b-cedula" placeholder="Ej: 1712345678"
+             onkeydown="if(event.key==='Enter')doBuscar()" maxlength="20">
+    </div>
+    <button class="btn btn-blue" onclick="doBuscar()" style="margin-bottom:20px">🔍 BUSCAR</button>
+    <div id="buscar-result"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ CATEGORÍAS ════════════════════════════ -->
+<div class="screen" id="screen-categorias">
+  <div class="g-header">
+    <button class="btn-back" onclick="goHome()">← Inicio</button>
+    <span class="logo">⚙️ GESTIONAR CATEGORÍAS</span>
+    <span class="club-name" id="cat-club-name"></span>
+  </div>
+  <div class="content">
+    <div class="search-bar" style="max-width:400px;margin-bottom:16px">
+      <input type="text" id="cat-nueva" placeholder="Nueva categoría (ej: Cinturón Negro 1er Dan)"
+             onkeydown="if(event.key==='Enter')agregarCategoria()">
+      <button class="btn btn-blue" onclick="agregarCategoria()">➕ Agregar</button>
+    </div>
+    <div class="section-line"></div>
+    <div id="cat-list" class="cat-list"><div class="spinner">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ CONFIGURACIÓN ════════════════════════════ -->
+<div class="screen" id="screen-config">
+  <div class="g-header">
+    <button class="btn-back" onclick="goHome()">← Inicio</button>
+    <span class="logo">🔧 CONFIGURACIÓN</span>
+    <span class="club-name" id="cfg-club-name"></span>
+  </div>
+  <div class="content">
+
+    <div class="config-section">
+      <h3>🏫 Datos del Club</h3>
+      <div class="form-group">
+        <label>Nombre del Club</label>
+        <input type="text" id="cfg-nombre" placeholder="Nombre del club">
+      </div>
+      <div class="form-group">
+        <label>Ciudad</label>
+        <input type="text" id="cfg-ciudad" placeholder="Ciudad">
+      </div>
+      <button class="btn btn-blue btn-sm" onclick="guardarInfoClub()">💾 Guardar Datos</button>
+    </div>
+
+    <div class="config-section">
+      <h3>🔑 Cambiar Contraseña</h3>
+      <div class="form-group">
+        <label>Contraseña Actual</label>
+        <input type="password" id="cfg-pw-actual" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label>Nueva Contraseña</label>
+        <input type="password" id="cfg-pw-nueva" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label>Confirmar Nueva Contraseña</label>
+        <input type="password" id="cfg-pw-conf" placeholder="••••••••">
+      </div>
+      <button class="btn btn-blue btn-sm" onclick="cambiarPassword()">🔐 Cambiar Contraseña</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════════════════════
+const S = {
+  token:       sessionStorage.getItem('club_token') || '',
+  club:        null,
+  miembros:    [],
+  categorias:  [],
+  plantillas:  [],
+  currentId:   null,   // ID del miembro en ficha
+  editingId:   null,   // null = nuevo, number = editar
+};
+
+// ── API helper ────────────────────────────────────────────────
+async function api(method, path, body = null) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (S.token) headers['Authorization'] = 'Bearer ' + S.token;
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const res  = await fetch(path, opts);
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) { doLogout(); return null; }
+    return { ok: res.ok, status: res.status, data };
+  } catch(e) {
+    return { ok: false, data: { error: 'Error de conexión con el servidor' } };
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = `toast-item toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'fadeOut .4s ease forwards';
+    setTimeout(() => el.remove(), 400);
+  }, 3500);
+}
+
+// ── Navegación ────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + id);
+  if (el) { el.classList.add('active'); el.scrollTop = 0; }
+}
+
+function goHome() { showScreen('home'); }
+
+async function goTo(screen) {
+  showScreen(screen);
+  updateClubNames();
+  if (screen === 'base')       await loadMiembros();
+  if (screen === 'nuevo')      await prepareForm(null);
+  if (screen === 'categorias') await loadCategorias();
+  if (screen === 'buscar')     { document.getElementById('b-cedula').value=''; document.getElementById('buscar-result').innerHTML=''; }
+  if (screen === 'config')     await loadConfig();
+}
+
+function updateClubNames() {
+  const n = S.club ? S.club.nombre : '';
+  ['base','ficha','form','buscar','cat','cfg'].forEach(id => {
+    const el = document.getElementById(id + '-club-name');
+    if (el) el.textContent = n;
+  });
+}
+
+// ── Tabs login/register ───────────────────────────────────────
+function showTab(tab) {
+  document.getElementById('pane-login').style.display = tab==='login' ? '' : 'none';
+  document.getElementById('pane-reg').style.display   = tab==='reg'   ? '' : 'none';
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-reg').classList.toggle('active',   tab==='reg');
+}
+
+// ══════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════
+async function doLogin() {
+  const cedula = document.getElementById('l-cedula').value.trim();
+  const pw     = document.getElementById('l-pw').value.trim();
+  const errEl  = document.getElementById('l-err');
+  errEl.textContent = '';
+  if (!cedula || !pw) { errEl.textContent = 'Ingresá tu cédula y contraseña.'; return; }
+  const r = await api('POST', '/club/login', { cedula, password: pw });
+  if (!r) return;
+  if (!r.ok) { errEl.textContent = r.data.error || 'Error al iniciar sesión.'; return; }
+  S.token = r.data.token;
+  sessionStorage.setItem('club_token', S.token);
+  await loadClubInfo();
+  showScreen('home');
+  updateClubNames();
+  document.getElementById('home-club-name').textContent = S.club ? S.club.nombre : '';
+}
+
+async function doRegistrar() {
+  const d = {
+    nombre:         document.getElementById('r-nombre').value.trim(),
+    ciudad:         document.getElementById('r-ciudad').value.trim(),
+    nombres_dueno:  document.getElementById('r-nombres').value.trim(),
+    apellidos_dueno:document.getElementById('r-apellidos').value.trim(),
+    cedula_dueno:   document.getElementById('r-cedula').value.trim(),
+    password:       document.getElementById('r-pw1').value.trim(),
+  };
+  const pw2 = document.getElementById('r-pw2').value.trim();
+  const errEl = document.getElementById('r-err');
+  errEl.textContent = '';
+  if (!Object.values(d).every(v => v)) { errEl.textContent = 'Todos los campos son obligatorios.'; return; }
+  if (d.password !== pw2) { errEl.textContent = 'Las contraseñas no coinciden.'; return; }
+  const r = await api('POST', '/club/registrar', d);
+  if (!r) return;
+  if (!r.ok) { errEl.textContent = r.data.error || 'Error al registrar.'; return; }
+  document.getElementById('reg-form').style.display = 'none';
+  document.getElementById('reg-ok').style.display   = '';
+}
+
+function doLogout() {
+  S.token = ''; S.club = null; S.miembros = [];
+  sessionStorage.removeItem('club_token');
+  showScreen('login');
+  showTab('login');
+}
+
+async function loadClubInfo() {
+  const r = await api('GET', '/club/info');
+  if (r && r.ok) S.club = r.data;
+}
+
+// ══════════════════════════════════════════════════════════════
+// BASE DE DATOS
+// ══════════════════════════════════════════════════════════════
+async function loadMiembros() {
+  const tbody = document.getElementById('tbl-base-body');
+  tbody.innerHTML = '<tr><td colspan="7" class="spinner">Cargando...</td></tr>';
+  const r = await api('GET', '/club/miembros');
+  if (!r || !r.ok) { tbody.innerHTML = '<tr><td colspan="7" style="color:var(--peligro);padding:20px;text-align:center">Error al cargar miembros.</td></tr>'; return; }
+  S.miembros = r.data;
+  renderTabla(S.miembros);
+}
+
+function renderTabla(miembros) {
+  const tbody = document.getElementById('tbl-base-body');
+  if (!miembros.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="badge-empty" style="padding:20px;text-align:center">No hay afiliados registrados. ➕ Agregá el primero.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = miembros.map(m => `
+    <tr>
+      <td>${m.nombres}</td>
+      <td>${m.apellidos}</td>
+      <td style="font-family:monospace">${m.cedula || '—'}</td>
+      <td>${m.categoria || '—'}</td>
+      <td>${m.telefono || '—'}</td>
+      <td>${fmtDate(m.fecha_ingreso)}</td>
+      <td class="tbl-actions">
+        <button class="btn-tbl" onclick="verFicha(${m.id})">👁️ Ficha</button>
+        <button class="btn-tbl" onclick="editarMiembro(${m.id})">✏️</button>
+        <button class="btn-tbl danger" onclick="eliminarMiembro(${m.id},'${esc(m.nombres)} ${esc(m.apellidos)}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filtrarTabla() {
+  const q = document.getElementById('base-search').value.toLowerCase();
+  const filtrados = S.miembros.filter(m =>
+    (m.nombres    || '').toLowerCase().includes(q) ||
+    (m.apellidos  || '').toLowerCase().includes(q) ||
+    (m.cedula     || '').toLowerCase().includes(q) ||
+    (m.categoria  || '').toLowerCase().includes(q)
+  );
+  renderTabla(filtrados);
+}
+
+async function eliminarMiembro(id, nombre) {
+  if (!confirm(`¿Eliminar a ${nombre}?\n\nEsta acción no se puede deshacer.`)) return;
+  const r = await api('DELETE', `/club/miembros/${id}`);
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error al eliminar.', 'err'); return; }
+  toast(`${nombre} eliminado correctamente.`);
+  await loadMiembros();
+}
+
+// ══════════════════════════════════════════════════════════════
+// FICHA + HISTORIAL
+// ══════════════════════════════════════════════════════════════
+async function verFicha(id) {
+  S.currentId = id;
+  showScreen('ficha');
+  updateClubNames();
+  const m = S.miembros.find(x => x.id === id);
+  if (m) renderFicha(m);
+  else {
+    const r = await api('GET', `/club/miembros/${id}`);
+    if (r && r.ok) renderFicha(r.data);
+  }
+  // Cargar plantillas y historial en paralelo
+  loadPlantillas();
+  loadHistorial(id);
+  // Botones ficha
+  document.getElementById('btn-editar-ficha').onclick   = () => editarMiembro(id);
+  document.getElementById('btn-eliminar-ficha').onclick = () => {
+    const m = S.miembros.find(x => x.id === id) || {};
+    eliminarMiembroDesde(`${m.nombres||''} ${m.apellidos||''}`.trim(), id);
+  };
+}
+
+async function eliminarMiembroDesde(nombre, id) {
+  if (!confirm(`¿Eliminar a ${nombre}?\n\nEsta acción no se puede deshacer.`)) return;
+  const r = await api('DELETE', `/club/miembros/${id}`);
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error al eliminar.', 'err'); return; }
+  toast(`${nombre} eliminado correctamente.`);
+  await loadMiembros();
+  goTo('base');
+}
+
+function renderFicha(m) {
+  const nombre = `${m.nombres} ${m.apellidos}`.trim();
+  document.getElementById('ficha-nombre').textContent  = nombre;
+  document.getElementById('ficha-cat').textContent     = m.categoria || '—';
+  document.getElementById('ficha-avatar').textContent  = (m.genero === 'Mujer') ? '👩' : '🧑';
+  document.getElementById('fi-cedula').textContent     = m.cedula             || '—';
+  document.getElementById('fi-genero').textContent     = m.genero             || '—';
+  document.getElementById('fi-fnac').textContent       = fmtDate(m.fecha_nacimiento);
+  document.getElementById('fi-cnac').textContent       = m.ciudad_nacimiento  || '—';
+  document.getElementById('fi-cres').textContent       = m.ciudad_residencia  || '—';
+  document.getElementById('fi-tel').textContent        = m.telefono           || '—';
+  document.getElementById('fi-correo').textContent     = m.correo             || '—';
+  document.getElementById('fi-dir').textContent        = m.direccion          || '—';
+  document.getElementById('fi-fing').textContent       = fmtDate(m.fecha_ingreso);
+  document.getElementById('fi-id').textContent         = m.id;
+}
+
+async function loadPlantillas() {
+  if (S.plantillas.length) { buildPlantillaSelect(); return; }
+  const r = await api('GET', '/club/historial/plantillas');
+  if (r && r.ok) { S.plantillas = r.data; buildPlantillaSelect(); }
+}
+
+function buildPlantillaSelect() {
+  const sel = document.getElementById('hist-plt-sel');
+  sel.innerHTML = '<option value="">— Seleccioná una plantilla —</option>';
+  S.plantillas.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id; opt.textContent = p.nombre; sel.appendChild(opt);
+  });
+}
+
+function buildHistFields() {
+  const plt_id = document.getElementById('hist-plt-sel').value;
+  const wrap   = document.getElementById('hist-campos-wrap');
+  wrap.innerHTML = '';
+  if (!plt_id) return;
+  const plt = S.plantillas.find(p => String(p.id) === String(plt_id));
+  if (!plt) return;
+  plt.campos.sort((a,b) => a.orden - b.orden).forEach(c => {
+    const g = document.createElement('div');
+    g.className = 'form-group';
+    const lbl  = document.createElement('label'); lbl.textContent = c.etiqueta;
+    const tipo = c.tipo === 'numero' ? 'number' : c.tipo === 'fecha' ? 'date' : 'text';
+    const inp  = document.createElement('input');
+    inp.type = tipo; inp.id = `hc-${c.id}`;
+    inp.placeholder = c.etiqueta;
+    inp.style.cssText = 'width:100%;background:var(--fondo);border:1px solid var(--borde);color:var(--texto);padding:9px 12px;border-radius:7px;font-size:.88rem;outline:none';
+    g.appendChild(lbl); g.appendChild(inp); wrap.appendChild(g);
+  });
+}
+
+function toggleHistForm() {
+  const f = document.getElementById('hist-form');
+  f.style.display = f.style.display === 'none' ? '' : 'none';
+  if (f.style.display === '') {
+    document.getElementById('hist-plt-sel').value = '';
+    document.getElementById('hist-campos-wrap').innerHTML = '';
+  }
+}
+
+async function guardarHistorial() {
+  const plt_id = document.getElementById('hist-plt-sel').value;
+  if (!plt_id) { toast('Seleccioná una plantilla.', 'err'); return; }
+  const plt    = S.plantillas.find(p => String(p.id) === String(plt_id));
+  const valores = {};
+  let ok = true;
+  plt.campos.forEach(c => {
+    const el = document.getElementById(`hc-${c.id}`);
+    valores[c.id] = el ? el.value : '';
+  });
+  const r = await api('POST', '/club/historial', {
+    socio_id: S.currentId, plantilla_id: parseInt(plt_id), valores
+  });
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error al guardar.', 'err'); return; }
+  toast('Entrada de historial guardada.');
+  toggleHistForm();
+  await loadHistorial(S.currentId);
+}
+
+async function loadHistorial(socio_id) {
+  const wrap = document.getElementById('hist-list');
+  wrap.innerHTML = '<div class="spinner">Cargando historial...</div>';
+  const r = await api('GET', `/club/historial/${socio_id}`);
+  if (!r || !r.ok) { wrap.innerHTML = '<div class="badge-empty">No se pudo cargar el historial.</div>'; return; }
+  const registros = r.data;
+  if (!registros.length) { wrap.innerHTML = '<div class="badge-empty" style="padding:10px 0">Sin entradas de historial aún.</div>'; return; }
+  wrap.innerHTML = registros.map(reg => `
+    <div class="hist-entry">
+      <div class="hist-entry-head" onclick="toggleHistEntry(this)">
+        <span class="hist-entry-plt">📁 ${esc(reg.plantilla)}</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:.75rem;color:var(--texto-s)">${reg.valores.length} campo${reg.valores.length!==1?'s':''}</span>
+          <button class="btn-tbl danger" onclick="event.stopPropagation();borrarHistorial(${reg.id})">🗑️</button>
+        </div>
+      </div>
+      <div class="hist-entry-body">
+        ${reg.valores.map(v => `
+          <div class="hist-val">
+            <label>${esc(v.etiqueta)}</label>
+            <span>${esc(v.valor) || '—'}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleHistEntry(head) {
+  const body = head.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+async function borrarHistorial(reg_id) {
+  if (!confirm('¿Eliminar esta entrada del historial?')) return;
+  const r = await api('DELETE', `/club/historial/${reg_id}`);
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error.', 'err'); return; }
+  toast('Entrada eliminada.');
+  await loadHistorial(S.currentId);
+}
+
+// ══════════════════════════════════════════════════════════════
+// FORM NUEVO / EDITAR
+// ══════════════════════════════════════════════════════════════
+async function prepareForm(id) {
+  S.editingId = id;
+  document.getElementById('form-titulo').textContent = id ? '✏️ EDITAR AFILIADO' : '➕ NUEVO AFILIADO';
+  limpiarForm();
+  // Cargar categorias en el select
+  if (!S.categorias.length) await loadCategorias(true);
+  fillCatSelect();
+  if (id) {
+    const m = S.miembros.find(x => x.id === id);
+    if (m) fillForm(m);
+    else {
+      const r = await api('GET', `/club/miembros/${id}`);
+      if (r && r.ok) fillForm(r.data);
+    }
+  } else {
+    // Fecha ingreso default = hoy
+    document.getElementById('f-fing').value = new Date().toISOString().split('T')[0];
+  }
+}
+
+function fillCatSelect() {
+  const sel = document.getElementById('f-categoria');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Seleccioná —</option>';
+  S.categorias.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.nombre; opt.textContent = c.nombre; sel.appendChild(opt);
+  });
+  sel.value = cur;
+}
+
+function fillForm(m) {
+  document.getElementById('f-nombres').value   = m.nombres             || '';
+  document.getElementById('f-apellidos').value = m.apellidos           || '';
+  document.getElementById('f-cedula').value    = m.cedula              || '';
+  document.getElementById('f-telefono').value  = m.telefono            || '';
+  document.getElementById('f-correo').value    = m.correo              || '';
+  document.getElementById('f-cnac').value      = m.ciudad_nacimiento   || '';
+  document.getElementById('f-cres').value      = m.ciudad_residencia   || '';
+  document.getElementById('f-dir').value       = m.direccion           || '';
+  document.getElementById('f-fnac').value      = m.fecha_nacimiento    || '';
+  document.getElementById('f-fing').value      = m.fecha_ingreso       || '';
+  document.getElementById('f-categoria').value = m.categoria           || '';
+  if (m.genero === 'Hombre') document.getElementById('f-hombre').checked = true;
+  if (m.genero === 'Mujer')  document.getElementById('f-mujer').checked  = true;
+}
+
+function limpiarForm() {
+  ['f-nombres','f-apellidos','f-cedula','f-telefono','f-correo',
+   'f-cnac','f-cres','f-dir','f-fnac','f-fing'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-categoria').value = '';
+  document.querySelectorAll('input[name=genero]').forEach(r => r.checked = false);
+}
+
+async function guardarMiembro() {
+  const genero_el = document.querySelector('input[name=genero]:checked');
+  const body = {
+    nombres:            document.getElementById('f-nombres').value.trim(),
+    apellidos:          document.getElementById('f-apellidos').value.trim(),
+    cedula:             document.getElementById('f-cedula').value.trim(),
+    categoria:          document.getElementById('f-categoria').value,
+    telefono:           document.getElementById('f-telefono').value.trim(),
+    correo:             document.getElementById('f-correo').value.trim(),
+    ciudad_nacimiento:  document.getElementById('f-cnac').value.trim(),
+    ciudad_residencia:  document.getElementById('f-cres').value.trim(),
+    direccion:          document.getElementById('f-dir').value.trim(),
+    fecha_nacimiento:   document.getElementById('f-fnac').value,
+    fecha_ingreso:      document.getElementById('f-fing').value,
+    genero:             genero_el ? genero_el.value : '',
+  };
+  if (!body.nombres || !body.apellidos || !body.cedula) {
+    toast('Nombres, apellidos y cédula son obligatorios.', 'err'); return;
+  }
+  const method = S.editingId ? 'PUT' : 'POST';
+  const path   = S.editingId ? `/club/miembros/${S.editingId}` : '/club/miembros';
+  const r = await api(method, path, body);
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error al guardar.', 'err'); return; }
+  toast(S.editingId ? 'Afiliado actualizado correctamente.' : 'Afiliado registrado correctamente.');
+  await loadMiembros();
+  goTo('base');
+}
+
+async function editarMiembro(id) {
+  await prepareForm(id);
+  showScreen('nuevo');
+  updateClubNames();
+}
+
+// ══════════════════════════════════════════════════════════════
+// BUSCAR
+// ══════════════════════════════════════════════════════════════
+async function doBuscar() {
+  const cedula = document.getElementById('b-cedula').value.trim();
+  const wrap   = document.getElementById('buscar-result');
+  if (!cedula) { wrap.innerHTML = '<div style="color:var(--texto-s);font-size:.85rem">Ingresá una cédula.</div>'; return; }
+  wrap.innerHTML = '<div class="spinner">Buscando...</div>';
+  const r = await api('GET', `/club/buscar?cedula=${encodeURIComponent(cedula)}`);
+  if (!r) return;
+  if (!r.ok) {
+    wrap.innerHTML = `<div style="color:var(--peligro);font-size:.88rem;padding:12px 0">⚠ ${r.data.error}</div>`;
+    return;
+  }
+  const m = r.data;
+  wrap.innerHTML = `
+    <div class="ficha-card" style="max-width:560px">
+      <div class="ficha-header">
+        <div class="ficha-avatar">${m.genero==='Mujer'?'👩':'🧑'}</div>
+        <div>
+          <div class="ficha-nombre">${esc(m.nombres)} ${esc(m.apellidos)}</div>
+          <div class="ficha-cat">${esc(m.categoria||'Sin categoría')}</div>
+        </div>
+      </div>
+      <div class="ficha-body">
+        <div class="ficha-field"><label>Cédula</label><span>${esc(m.cedula||'—')}</span></div>
+        <div class="ficha-field"><label>Teléfono</label><span>${esc(m.telefono||'—')}</span></div>
+        <div class="ficha-field"><label>F. Nacimiento</label><span>${fmtDate(m.fecha_nacimiento)}</span></div>
+        <div class="ficha-field"><label>F. Ingreso</label><span>${fmtDate(m.fecha_ingreso)}</span></div>
+        <div class="ficha-field"><label>Ciudad Nacimiento</label><span>${esc(m.ciudad_nacimiento||'—')}</span></div>
+        <div class="ficha-field"><label>Ciudad Residencia</label><span>${esc(m.ciudad_residencia||'—')}</span></div>
+        <div class="ficha-field"><label>Correo</label><span>${esc(m.correo||'—')}</span></div>
+        <div class="ficha-field"><label>Dirección</label><span>${esc(m.direccion||'—')}</span></div>
+      </div>
+      <div class="ficha-actions">
+        <button class="btn btn-blue btn-sm" onclick="verFicha(${m.id})">📋 Ver Ficha Completa e Historial</button>
+      </div>
+    </div>`;
+  // Asegurarse que el miembro esté en el array
+  if (!S.miembros.find(x => x.id === m.id)) S.miembros.push(m);
+}
+
+// ══════════════════════════════════════════════════════════════
+// CATEGORÍAS
+// ══════════════════════════════════════════════════════════════
+async function loadCategorias(silent = false) {
+  const wrap = document.getElementById('cat-list');
+  if (!silent && wrap) wrap.innerHTML = '<div class="spinner">Cargando...</div>';
+  const r = await api('GET', '/club/categorias');
+  if (r && r.ok) {
+    S.categorias = r.data;
+    if (!silent) renderCategorias();
+  }
+}
+
+function renderCategorias() {
+  const wrap = document.getElementById('cat-list');
+  if (!wrap) return;
+  if (!S.categorias.length) {
+    wrap.innerHTML = '<div class="badge-empty">No hay categorías. Agregá la primera arriba.</div>'; return;
+  }
+  wrap.innerHTML = S.categorias.map(c => `
+    <div class="cat-item">
+      <span>${esc(c.nombre)}</span>
+      <button class="btn-tbl danger" onclick="eliminarCategoria(${c.id},'${esc(c.nombre)}')">🗑️ Eliminar</button>
+    </div>`).join('');
+}
+
+async function agregarCategoria() {
+  const input  = document.getElementById('cat-nueva');
+  const nombre = input.value.trim();
+  if (!nombre) { toast('Ingresá un nombre para la categoría.', 'err'); return; }
+  const r = await api('POST', '/club/categorias', { nombre });
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error al agregar.', 'err'); return; }
+  toast(`Categoría "${nombre}" agregada.`);
+  input.value = '';
+  await loadCategorias();
+}
+
+async function eliminarCategoria(id, nombre) {
+  if (!confirm(`¿Eliminar la categoría "${nombre}"?`)) return;
+  const r = await api('DELETE', `/club/categorias/${id}`);
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error al eliminar.', 'err'); return; }
+  toast(`Categoría "${nombre}" eliminada.`);
+  await loadCategorias();
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONFIGURACIÓN
+// ══════════════════════════════════════════════════════════════
+async function loadConfig() {
+  const r = await api('GET', '/club/info');
+  if (!r || !r.ok) return;
+  S.club = r.data;
+  document.getElementById('cfg-nombre').value = r.data.nombre || '';
+  document.getElementById('cfg-ciudad').value = r.data.ciudad || '';
+  updateClubNames();
+}
+
+async function guardarInfoClub() {
+  const nombre = document.getElementById('cfg-nombre').value.trim();
+  const ciudad = document.getElementById('cfg-ciudad').value.trim();
+  if (!nombre) { toast('El nombre del club es obligatorio.', 'err'); return; }
+  const r = await api('PUT', '/club/info', { nombre, ciudad });
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error al guardar.', 'err'); return; }
+  S.club = { ...S.club, nombre, ciudad };
+  toast('Datos del club actualizados.');
+  updateClubNames();
+  document.getElementById('home-club-name').textContent = nombre;
+}
+
+async function cambiarPassword() {
+  const actual = document.getElementById('cfg-pw-actual').value.trim();
+  const nueva  = document.getElementById('cfg-pw-nueva').value.trim();
+  const conf   = document.getElementById('cfg-pw-conf').value.trim();
+  if (!actual || !nueva) { toast('Ingresá la contraseña actual y la nueva.', 'err'); return; }
+  if (nueva !== conf) { toast('Las contraseñas nuevas no coinciden.', 'err'); return; }
+  const r = await api('PUT', '/club/password', { actual, nueva });
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error al cambiar contraseña.', 'err'); return; }
+  toast('Contraseña cambiada correctamente. Iniciá sesión de nuevo.', 'info');
+  ['cfg-pw-actual','cfg-pw-nueva','cfg-pw-conf'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  setTimeout(doLogout, 2000);
+}
+
+// ══════════════════════════════════════════════════════════════
+// UTILIDADES
+// ══════════════════════════════════════════════════════════════
+function fmtDate(s) {
+  if (!s) return '—';
+  try {
+    const [y,m,d] = s.split('-');
+    if (y && m && d) return `${d}/${m}/${y}`;
+    return s;
+  } catch(e) { return s; }
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+(async function init() {
+  if (S.token) {
+    const r = await api('GET', '/club/info');
+    if (r && r.ok) {
+      S.club = r.data;
+      showScreen('home');
+      document.getElementById('home-club-name').textContent = S.club.nombre;
+      updateClubNames();
+    } else {
+      doLogout();
+    }
+  }
+})();
+</script>
+</body>
+</html>
