@@ -126,6 +126,9 @@ def _migrar_tablas_club():
         """)
         cur.execute("ALTER TABLE miembros ADD COLUMN IF NOT EXISTS ciudad_residencia VARCHAR(100)")
         cur.execute("ALTER TABLE miembros ADD COLUMN IF NOT EXISTS club_id INTEGER REFERENCES clubs(id) ON DELETE SET NULL")
+        # Nuevos campos en clubs
+        cur.execute("ALTER TABLE clubs ADD COLUMN IF NOT EXISTS direccion VARCHAR(200)")
+        cur.execute("ALTER TABLE clubs ADD COLUMN IF NOT EXISTS telefono  VARCHAR(20)")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS categorias_club (
                 id       SERIAL        PRIMARY KEY,
@@ -438,7 +441,8 @@ def club_info_get():
         cur  = conn.cursor()
         cur.execute("""
             SELECT id, nombre, ciudad, estado, cedula_dueno,
-                   nombres_dueno, apellidos_dueno, debe_cambiar_pass
+                   nombres_dueno, apellidos_dueno, debe_cambiar_pass,
+                   COALESCE(direccion,''), COALESCE(telefono,'')
             FROM clubs WHERE id = %s
         """, (g.club_id,))
         row = cur.fetchone()
@@ -448,7 +452,8 @@ def club_info_get():
         return jsonify({"id": row[0], "nombre": row[1], "ciudad": row[2],
                         "estado": row[3], "cedula_dueno": row[4],
                         "nombres_dueno": row[5], "apellidos_dueno": row[6],
-                        "debe_cambiar_pass": row[7]})
+                        "debe_cambiar_pass": row[7],
+                        "direccion": row[8], "telefono": row[9]})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -456,16 +461,18 @@ def club_info_get():
 @app.route('/club/info', methods=['PUT'])
 @require_club
 def club_info_put():
-    d      = request.get_json() or {}
-    nombre = (d.get("nombre") or "").strip()
-    ciudad = (d.get("ciudad") or "").strip()
+    d        = request.get_json() or {}
+    nombre   = (d.get("nombre")   or "").strip()
+    ciudad   = (d.get("ciudad")   or "").strip()
+    direccion= (d.get("direccion")or "").strip()
+    telefono = (d.get("telefono") or "").strip()
     if not nombre:
         return jsonify({"error": "El nombre del club es obligatorio"}), 400
     try:
         conn = conectar_miembros()
         cur  = conn.cursor()
-        cur.execute("UPDATE clubs SET nombre=%s, ciudad=%s WHERE id=%s",
-                    (nombre, ciudad, g.club_id))
+        cur.execute("UPDATE clubs SET nombre=%s, ciudad=%s, direccion=%s, telefono=%s WHERE id=%s",
+                    (nombre, ciudad, direccion, telefono, g.club_id))
         conn.commit()
         liberar_miembros(conn)
         return jsonify({"status": "ok"})
@@ -659,11 +666,20 @@ def club_categorias_get():
     try:
         conn = conectar_miembros()
         cur  = conn.cursor()
+        # Categorías propias del club
         cur.execute("SELECT id, nombre FROM categorias_club WHERE club_id=%s ORDER BY nombre",
                     (g.club_id,))
-        rows = [{"id": r[0], "nombre": r[1]} for r in cur.fetchall()]
+        propias = [{"id": f"c_{r[0]}", "nombre": r[1], "fuente": "club", "id_real": r[0]}
+                   for r in cur.fetchall()]
+        # Categorías globales de BlackBelt (tabla categorias)
+        cur.execute("SELECT id, nombre FROM categorias ORDER BY nombre")
+        globales = [{"id": f"g_{r[0]}", "nombre": r[1], "fuente": "global", "id_real": r[0]}
+                    for r in cur.fetchall()]
         liberar_miembros(conn)
-        return jsonify(rows)
+        # Unir: globales primero, luego propias; sin duplicar nombres
+        nombres_globales = {c["nombre"].lower() for c in globales}
+        propias_unicas   = [c for c in propias if c["nombre"].lower() not in nombres_globales]
+        return jsonify(globales + propias_unicas)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -678,6 +694,17 @@ def club_categorias_post():
     try:
         conn = conectar_miembros()
         cur  = conn.cursor()
+        # Verificar si ya existe en categorías globales
+        cur.execute("SELECT id FROM categorias WHERE LOWER(nombre)=LOWER(%s)", (nombre,))
+        if cur.fetchone():
+            liberar_miembros(conn)
+            return jsonify({"error": f"La categoría \"{nombre}\" ya existe en las categorías globales de IKA Ecuador."}), 409
+        # Verificar si ya existe en categorías del club
+        cur.execute("SELECT id FROM categorias_club WHERE club_id=%s AND LOWER(nombre)=LOWER(%s)",
+                    (g.club_id, nombre))
+        if cur.fetchone():
+            liberar_miembros(conn)
+            return jsonify({"error": f"La categoría \"{nombre}\" ya está registrada en tu club."}), 409
         cur.execute("INSERT INTO categorias_club (club_id, nombre) VALUES (%s,%s) RETURNING id",
                     (g.club_id, nombre))
         new_id = cur.fetchone()[0]
@@ -685,8 +712,6 @@ def club_categorias_post():
         liberar_miembros(conn)
         return jsonify({"status": "ok", "id": new_id}), 201
     except Exception as e:
-        if "unique" in str(e).lower():
-            return jsonify({"error": "Esa categoría ya existe."}), 409
         return jsonify({"error": str(e)}), 500
 
 
@@ -817,8 +842,76 @@ def club_hist_delete(reg_id):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/club/importar_excel', methods=['POST'])
+@require_club
+def club_importar_excel():
+    """
+    Recibe un JSON con array 'miembros' (filas del Excel ya parseadas en el cliente).
+    Inserta los que no existan (por cédula). Devuelve resumen.
+    """
+    d       = request.get_json() or {}
+    filas   = d.get("miembros", [])
+    if not filas:
+        return jsonify({"error": "No se recibieron datos"}), 400
+    ok_count  = 0
+    dup_count = 0
+    err_count = 0
+    errores   = []
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        for idx, f in enumerate(filas, 1):
+            try:
+                cedula = str(f.get("cedula") or "").strip()
+                if not cedula:
+                    err_count += 1
+                    errores.append(f"Fila {idx}: cédula vacía")
+                    continue
+                # Verificar duplicado global
+                cur.execute("SELECT id FROM miembros WHERE cedula=%s", (cedula,))
+                if cur.fetchone():
+                    dup_count += 1
+                    continue
+                cur.execute("""
+                    INSERT INTO miembros
+                        (nombres,apellidos,cedula,categoria,ciudad_nacimiento,fecha_nacimiento,
+                         telefono,direccion,correo,fecha_ingreso,genero,ciudad_residencia,
+                         password_hash,debe_cambiar_pass,club_id)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE,%s)
+                """, (
+                    str(f.get("nombres","")).strip(),
+                    str(f.get("apellidos","")).strip(),
+                    cedula,
+                    str(f.get("categoria","")).strip(),
+                    str(f.get("ciudad_nacimiento","")).strip(),
+                    _parse_date(f.get("fecha_nacimiento")),
+                    str(f.get("telefono","")).strip(),
+                    str(f.get("direccion","")).strip(),
+                    str(f.get("correo","")).strip(),
+                    _parse_date(f.get("fecha_ingreso")),
+                    str(f.get("genero","")).strip(),
+                    str(f.get("ciudad_residencia","")).strip(),
+                    _hash_pw(cedula),
+                    g.club_id
+                ))
+                ok_count += 1
+            except Exception as e:
+                err_count += 1
+                errores.append(f"Fila {idx}: {str(e)[:80]}")
+        conn.commit()
+        liberar_miembros(conn)
+        return jsonify({
+            "status":    "ok",
+            "importados": ok_count,
+            "duplicados": dup_count,
+            "errores":    err_count,
+            "detalle_errores": errores[:20]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ─────────────────────────────────────────────────────────────
-# INICIO DEL SERVIDOR
 # ─────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5002))
