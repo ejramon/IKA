@@ -594,10 +594,23 @@ def club_miembro_get(mid):
             FROM miembros WHERE id=%s AND club_id=%s
         """, (mid, g.club_id))
         row = cur.fetchone()
-        liberar_miembros(conn)
         if not row:
+            liberar_miembros(conn)
             return jsonify({"error": "Miembro no encontrado"}), 404
-        return jsonify(dict(zip(_COLS_MIEMBRO, row)))
+        data = dict(zip(_COLS_MIEMBRO, row))
+        # Subcategorías dinámicas desde programas activos
+        cur.execute("""
+            SELECT DISTINCT p.subcategoria
+            FROM programa_inscriptos pi
+            JOIN programas p ON p.id = pi.programa_id
+            WHERE pi.socio_id = %s AND pi.club_id = %s
+              AND p.subcategoria IS NOT NULL AND p.subcategoria != ''
+              AND p.estado = 'activo'
+            ORDER BY p.subcategoria
+        """, (mid, g.club_id))
+        data["subcategorias"] = [r[0] for r in cur.fetchall()]
+        liberar_miembros(conn)
+        return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
