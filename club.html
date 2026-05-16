@@ -1464,9 +1464,13 @@ function esc(str) {
         </div>
         <!-- Cabecera días -->
         <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">
-          ${['L','M','X','J','V','S','D'].map(d =>
-            `<div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--texto-s);padding:4px 0">${d}</div>`
-          ).join('')}
+          <div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--texto-s);padding:4px 0">Lu</div>
+          <div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--texto-s);padding:4px 0">Ma</div>
+          <div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--texto-s);padding:4px 0">Mi</div>
+          <div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--texto-s);padding:4px 0">Ju</div>
+          <div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--texto-s);padding:4px 0">Vi</div>
+          <div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--texto-s);padding:4px 0">Sá</div>
+          <div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--texto-s);padding:4px 0">Do</div>
         </div>
         <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
       </div>
@@ -1496,15 +1500,16 @@ function esc(str) {
 
     <!-- ═══ PESTAÑA POR ALUMNO ═══ -->
     <div id="pane-alumno" style="display:none">
-      <!-- Bloque desplegable porcentaje -->
+      <!-- Bloque: Control de Asistencia -->
       <div id="bloque-pct" style="background:var(--sup);border:1px solid var(--borde);border-radius:12px;overflow:hidden;margin-bottom:12px">
         <button onclick="toggleBloque('pct')"
           style="width:100%;padding:12px 16px;background:none;border:none;cursor:pointer;
                  display:flex;align-items:center;justify-content:space-between">
-          <span style="font-weight:700;color:var(--texto);font-size:.9rem">📊 Porcentaje de Asistencia</span>
+          <span style="font-weight:700;color:var(--texto);font-size:.9rem">📊 Control de Asistencia</span>
           <span id="flecha-pct" style="color:var(--texto-s);font-size:.8rem">▼</span>
         </button>
         <div id="body-pct" style="padding:0 14px 14px">
+          <!-- Selector alumno -->
           <div style="margin-bottom:12px">
             <label style="font-size:.72rem;font-weight:700;color:var(--texto-s);text-transform:uppercase;display:block;margin-bottom:6px">Alumno</label>
             <select id="sel-alumno-pct" onchange="cargarPct()"
@@ -1513,6 +1518,7 @@ function esc(str) {
               <option value="">— Seleccioná un alumno —</option>
             </select>
           </div>
+          <!-- Fecha límite -->
           <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap">
             <div style="flex:1;min-width:160px">
               <label style="font-size:.72rem;font-weight:700;color:var(--texto-s);text-transform:uppercase;display:block;margin-bottom:6px">Calcular hasta</label>
@@ -1522,7 +1528,45 @@ function esc(str) {
             </div>
             <button class="btn btn-blue btn-sm" onclick="cargarPct()">Calcular</button>
           </div>
-          <div id="pct-resultado" style="text-align:center;padding:16px 0"></div>
+          <!-- Porcentaje -->
+          <div id="pct-resultado" style="text-align:center;padding:10px 0 14px"></div>
+          <!-- Calendario personal -->
+          <div id="cal-alumno-wrap" style="display:none">
+            <div style="background:var(--sup2);border-radius:10px;padding:12px;margin-top:4px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <button onclick="calAlumnoNav(-1)"
+                  style="background:none;border:1px solid var(--borde);color:var(--texto-s);
+                         padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:700">◀</button>
+                <span id="cal-alumno-titulo" style="font-weight:700;color:var(--texto);font-size:.88rem"></span>
+                <button onclick="calAlumnoNav(1)"
+                  style="background:none;border:1px solid var(--borde);color:var(--texto-s);
+                         padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:700">▶</button>
+              </div>
+              <!-- Cabecera días -->
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">
+                <div style="text-align:center;font-size:.68rem;font-weight:700;color:var(--texto-s);padding:3px 0">Lu</div>
+                <div style="text-align:center;font-size:.68rem;font-weight:700;color:var(--texto-s);padding:3px 0">Ma</div>
+                <div style="text-align:center;font-size:.68rem;font-weight:700;color:var(--texto-s);padding:3px 0">Mi</div>
+                <div style="text-align:center;font-size:.68rem;font-weight:700;color:var(--texto-s);padding:3px 0">Ju</div>
+                <div style="text-align:center;font-size:.68rem;font-weight:700;color:var(--texto-s);padding:3px 0">Vi</div>
+                <div style="text-align:center;font-size:.68rem;font-weight:700;color:var(--texto-s);padding:3px 0">Sá</div>
+                <div style="text-align:center;font-size:.68rem;font-weight:700;color:var(--texto-s);padding:3px 0">Do</div>
+              </div>
+              <div id="cal-alumno-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
+              <!-- Leyenda -->
+              <div style="display:flex;gap:14px;margin-top:10px;justify-content:center">
+                <span style="font-size:.72rem;color:var(--texto-s);display:flex;align-items:center;gap:4px">
+                  <span style="width:10px;height:10px;border-radius:3px;background:#1A6B45;display:inline-block"></span> Asistió
+                </span>
+                <span style="font-size:.72rem;color:var(--texto-s);display:flex;align-items:center;gap:4px">
+                  <span style="width:10px;height:10px;border-radius:3px;background:#8B1A28;display:inline-block"></span> Ausente
+                </span>
+                <span style="font-size:.72rem;color:var(--texto-s);display:flex;align-items:center;gap:4px">
+                  <span style="width:10px;height:10px;border-radius:3px;background:var(--borde);display:inline-block"></span> Sin registro
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1919,6 +1963,9 @@ async function guardarAsistencias() {
   renderCalendario();
 }
 
+const CAL_A = { anio: 0, mes: 0 }; // calendario personal del alumno
+let _pctAsistMap = {}; // {fecha: true/false/null}
+
 async function cargarPct() {
   const socio_id = document.getElementById('sel-alumno-pct').value;
   if (!socio_id) return;
@@ -1926,33 +1973,99 @@ async function cargarPct() {
     || new Date().toISOString().split('T')[0];
   const wrap = document.getElementById('pct-resultado');
   wrap.innerHTML = '<div class="spinner">Calculando...</div>';
+  document.getElementById('cal-alumno-wrap').style.display = 'none';
 
-  // Sesiones hasta la fecha límite
   const sesiones = PS.sesiones.filter(s => s.fecha <= hastaVal);
   if (!sesiones.length) {
     wrap.innerHTML = '<div class="badge-empty">Sin sesiones hasta esa fecha.</div>'; return;
   }
 
-  // Cargar asistencias de cada sesión para este alumno
-  let presentes = 0;
-  for (const ses of sesiones) {
-    const r = await api('GET', `/club/programas/sesion/${ses.id}/asistencias`);
-    if (r && r.ok) {
-      const alumno = r.data.find(a => a.socio_id === parseInt(socio_id));
-      if (alumno && alumno.asistio) presentes++;
-    }
-  }
-  const total = sesiones.length;
-  const pct   = Math.round(presentes / total * 100);
+  // Cargar asistencias en paralelo
+  _pctAsistMap = {};
+  PS.sesiones.forEach(s => { _pctAsistMap[s.fecha] = null; }); // inicializar todas
+
+  const promesas = sesiones.map(ses =>
+    api('GET', `/club/programas/sesion/${ses.id}/asistencias`).then(r => {
+      if (r && r.ok) {
+        const alumno = r.data.find(a => a.socio_id === parseInt(socio_id));
+        _pctAsistMap[ses.fecha] = alumno ? alumno.asistio : null;
+      }
+    })
+  );
+  await Promise.all(promesas);
+
+  const presentes = sesiones.filter(s => _pctAsistMap[s.fecha] === true).length;
+  const total     = sesiones.length;
+  const pct       = Math.round(presentes / total * 100);
 
   wrap.innerHTML = `
-    <div style="font-size:3rem;font-weight:800;color:var(--acento);line-height:1">${pct}%</div>
+    <div style="font-size:2.8rem;font-weight:800;color:var(--acento);line-height:1">${pct}%</div>
     <div style="font-size:.88rem;color:var(--texto-s);margin-top:6px">
       ${presentes} de ${total} sesiones asistidas
     </div>
     <div style="font-size:.75rem;color:var(--texto-s);margin-top:4px">
       hasta el ${hastaVal.split('-').reverse().join('/')}
     </div>`;
+
+  // Mostrar calendario personal — ir al mes de la primera sesión del alumno
+  const hoy = new Date();
+  CAL_A.anio = hoy.getFullYear();
+  CAL_A.mes  = hoy.getMonth();
+  if (sesiones.length) {
+    const primera = new Date(sesiones[0].fecha + 'T00:00:00');
+    CAL_A.anio = primera.getFullYear();
+    CAL_A.mes  = primera.getMonth();
+  }
+  document.getElementById('cal-alumno-wrap').style.display = '';
+  renderCalAlumno();
+}
+
+function calAlumnoNav(dir) {
+  CAL_A.mes += dir;
+  if (CAL_A.mes > 11) { CAL_A.mes = 0;  CAL_A.anio++; }
+  if (CAL_A.mes < 0)  { CAL_A.mes = 11; CAL_A.anio--; }
+  renderCalAlumno();
+}
+
+function renderCalAlumno() {
+  document.getElementById('cal-alumno-titulo').textContent =
+    `${_MESES[CAL_A.mes]} ${CAL_A.anio}`;
+
+  const hastaVal = document.getElementById('pct-fecha-hasta').value
+    || new Date().toISOString().split('T')[0];
+  const sesSet   = new Set(PS.sesiones.map(s => s.fecha));
+  const primerDia = new Date(CAL_A.anio, CAL_A.mes, 1);
+  let inicioCol   = primerDia.getDay();
+  inicioCol = inicioCol === 0 ? 6 : inicioCol - 1;
+  const diasEnMes = new Date(CAL_A.anio, CAL_A.mes + 1, 0).getDate();
+
+  let html = '';
+  for (let i = 0; i < inicioCol; i++) html += '<div></div>';
+
+  for (let d = 1; d <= diasEnMes; d++) {
+    const mm    = String(CAL_A.mes + 1).padStart(2, '0');
+    const dd    = String(d).padStart(2, '0');
+    const fecha = `${CAL_A.anio}-${mm}-${dd}`;
+    const esSes = sesSet.has(fecha) && fecha <= hastaVal;
+
+    let bg     = 'transparent';
+    let color  = 'var(--texto-s)';
+    let peso   = '400';
+    let radio  = '6px';
+    let opacidad = '1';
+
+    if (esSes) {
+      const asistio = _pctAsistMap[fecha];
+      if (asistio === true)  { bg = '#1A6B45'; color = '#fff'; peso = '700'; radio = '8px'; }
+      else if (asistio === false) { bg = '#8B1A28'; color = '#fff'; peso = '700'; radio = '8px'; }
+      else { bg = 'var(--borde)'; color = 'var(--texto-s)'; radio = '8px'; }
+    }
+
+    html += `<div style="text-align:center;padding:6px 2px;border-radius:${radio};
+               background:${bg};color:${color};font-size:.8rem;font-weight:${peso};
+               opacity:${opacidad}">${d}</div>`;
+  }
+  document.getElementById('cal-alumno-grid').innerHTML = html;
 }
 </script>
 
