@@ -951,7 +951,7 @@ def club_programas_get():
                    TO_CHAR(p.fecha_inicio, 'YYYY-MM-DD'),
                    TO_CHAR(p.fecha_fin,    'YYYY-MM-DD'),
                    p.dias_semana, p.horas_diarias, p.estado,
-                   p.descripcion,
+                   p.descripcion, p.subcategoria,
                    (SELECT COUNT(*) FROM programa_inscriptos pi
                     WHERE pi.programa_id = p.id AND pi.club_id = %s) AS n_inscriptos,
                    (SELECT COUNT(*) FROM programa_sesiones ps
@@ -984,9 +984,10 @@ def club_programas_get():
                 "horas":        float(row[5]) if row[5] else 0,
                 "estado":       row[6],
                 "descripcion":  row[7] or "",
-                "n_inscriptos": row[8],
-                "n_sesiones":   row[9],
-                "configurado":  row[8] > 0,
+                "subcategoria": row[8] or "",
+                "n_inscriptos": row[9],
+                "n_sesiones":   row[10],
+                "configurado":  row[9] > 0,
             })
         return jsonify(result)
     except Exception as e:
