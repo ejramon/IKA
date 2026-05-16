@@ -185,7 +185,7 @@ def _migrar_tablas_club():
                 sesion_id   INTEGER NOT NULL REFERENCES programa_sesiones(id) ON DELETE CASCADE,
                 socio_id    INTEGER NOT NULL REFERENCES miembros(id)          ON DELETE CASCADE,
                 club_id     INTEGER NOT NULL REFERENCES clubs(id)             ON DELETE CASCADE,
-                asistio     BOOLEAN,
+                asistio     BOOLEAN DEFAULT NULL,
                 UNIQUE(sesion_id, socio_id, club_id)
             )
         """)
@@ -1117,7 +1117,7 @@ def club_asistencias_get(sesion_id):
         # Traer inscriptos con su asistencia (LEFT JOIN)
         cur.execute("""
             SELECT pi.socio_id, m.nombres, m.apellidos, m.categoria,
-                   COALESCE(pa.asistio, FALSE)
+                   pa.asistio
             FROM programa_inscriptos pi
             JOIN miembros m ON m.id = pi.socio_id
             LEFT JOIN programa_asistencias pa
@@ -1159,7 +1159,7 @@ def club_asistencias_post(sesion_id):
 
         for item in asistencias:
             socio_id = int(item["socio_id"])
-            asistio  = bool(item.get("asistio", False))
+            asistio  = item.get("asistio")
             cur.execute("""
                 INSERT INTO programa_asistencias (sesion_id, socio_id, club_id, asistio)
                 VALUES (%s, %s, %s, %s)
