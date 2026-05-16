@@ -185,7 +185,7 @@ def _migrar_tablas_club():
                 sesion_id   INTEGER NOT NULL REFERENCES programa_sesiones(id) ON DELETE CASCADE,
                 socio_id    INTEGER NOT NULL REFERENCES miembros(id)          ON DELETE CASCADE,
                 club_id     INTEGER NOT NULL REFERENCES clubs(id)             ON DELETE CASCADE,
-                asistio     BOOLEAN NOT NULL DEFAULT FALSE,
+                asistio     BOOLEAN,
                 UNIQUE(sesion_id, socio_id, club_id)
             )
         """)
