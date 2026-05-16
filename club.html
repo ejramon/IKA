@@ -1633,6 +1633,9 @@ async function loadProgramas() {
           ⚙️ ${p.configurado ? 'Editar Inscriptos' : 'Configurar'}
         </button>
         ${p.configurado ? `
+        <button class="btn btn-ghost btn-sm" onclick="abrirVerInscriptos(${p.id})">
+          👥 Ver Inscriptos
+        </button>
         <button class="btn btn-ghost btn-sm" onclick="abrirSeguimiento(${p.id})">
           📊 Seguimiento
         </button>` : ''}
@@ -2067,7 +2070,116 @@ function renderCalAlumno() {
   }
   document.getElementById('cal-alumno-grid').innerHTML = html;
 }
+
+// ── Ver inscriptos con ficha ──────────────────────────────────
+async function abrirVerInscriptos(prog_id) {
+  PS.currentProg = PS.programas.find(p => p.id === prog_id);
+  if (!PS.currentProg) return;
+  showScreen('inscriptos');
+  document.getElementById('insc-titulo').textContent =
+    `👥 ${PS.currentProg.nombre.toUpperCase()}`;
+  document.getElementById('insc-club-name').textContent = S.club ? S.club.nombre : '';
+  const wrap = document.getElementById('insc-lista');
+  wrap.innerHTML = '<div class="spinner">Cargando...</div>';
+  const r = await api('GET', `/club/programas/${prog_id}/inscriptos`);
+  if (!r || !r.ok) {
+    wrap.innerHTML = '<div class="badge-empty">Error al cargar inscriptos.</div>'; return;
+  }
+  if (!r.data.length) {
+    wrap.innerHTML = '<div class="badge-empty">No hay inscriptos en este programa.</div>'; return;
+  }
+  wrap.innerHTML = r.data.map((m, i) => `
+    <div onclick="verFichaInscripto(${m.socio_id})"
+      style="display:flex;align-items:center;gap:14px;padding:12px 14px;
+             background:${i%2===0?'var(--sup)':'var(--fondo)'};
+             border-radius:8px;margin-bottom:6px;cursor:pointer;
+             border:1px solid var(--borde);transition:.15s"
+      onmouseover="this.style.borderColor='var(--acento)'"
+      onmouseout="this.style.borderColor='var(--borde)'">
+      <div style="width:38px;height:38px;border-radius:50%;background:var(--primario);
+                  display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">
+        🧑
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;color:var(--texto);font-size:.9rem">
+          ${esc(m.apellidos)}, ${esc(m.nombres)}
+        </div>
+        <div style="font-size:.76rem;color:var(--texto-s);margin-top:2px">
+          ${esc(m.cedula||'—')} · ${esc(m.categoria||'Sin categoría')}
+        </div>
+      </div>
+      <span style="color:var(--texto-s);font-size:.8rem">›</span>
+    </div>`).join('');
+}
+
+async function verFichaInscripto(socio_id) {
+  showScreen('ficha-insc');
+  document.getElementById('ficha-insc-club').textContent = S.club ? S.club.nombre : '';
+  let m = S.miembros.find(x => x.id === socio_id);
+  if (!m) {
+    const r = await api('GET', `/club/miembros/${socio_id}`);
+    if (r && r.ok) m = r.data;
+  }
+  if (!m) { toast('No se pudo cargar la ficha.', 'err'); return; }
+  document.getElementById('fi2-nombre').textContent = `${m.nombres} ${m.apellidos}`.trim();
+  document.getElementById('fi2-cat').textContent    = m.categoria          || '—';
+  document.getElementById('fi2-avatar').textContent = m.genero === 'Mujer' ? '👩' : '🧑';
+  document.getElementById('fi2-cedula').textContent = m.cedula             || '—';
+  document.getElementById('fi2-genero').textContent = m.genero             || '—';
+  document.getElementById('fi2-fnac').textContent   = fmtDate(m.fecha_nacimiento);
+  document.getElementById('fi2-cnac').textContent   = m.ciudad_nacimiento  || '—';
+  document.getElementById('fi2-cres').textContent   = m.ciudad_residencia  || '—';
+  document.getElementById('fi2-tel').textContent    = m.telefono           || '—';
+  document.getElementById('fi2-correo').textContent = m.correo             || '—';
+  document.getElementById('fi2-dir').textContent    = m.direccion          || '—';
+  document.getElementById('fi2-fing').textContent   = fmtDate(m.fecha_ingreso);
+}
 </script>
+
+<!-- ════════════════════════════ VER INSCRIPTOS ════════════════════════════ -->
+<div class="screen" id="screen-inscriptos">
+  <div class="g-header">
+    <button class="btn-back" onclick="goTo('programas')">← Programas</button>
+    <span class="logo" id="insc-titulo">👥 INSCRIPTOS</span>
+    <span class="club-name" id="insc-club-name"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
+  </div>
+  <div class="content">
+    <div id="insc-lista"><div class="spinner">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ FICHA INSCRIPTO ════════════════════════════ -->
+<div class="screen" id="screen-ficha-insc">
+  <div class="g-header">
+    <button class="btn-back" id="ficha-insc-back" onclick="showScreen('inscriptos')">← Inscriptos</button>
+    <span class="logo">👤 FICHA</span>
+    <span class="club-name" id="ficha-insc-club"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
+  </div>
+  <div class="content">
+    <div class="ficha-card">
+      <div class="ficha-header">
+        <div class="ficha-avatar" id="fi2-avatar">👤</div>
+        <div>
+          <div class="ficha-nombre" id="fi2-nombre">—</div>
+          <div class="ficha-cat"    id="fi2-cat">—</div>
+        </div>
+      </div>
+      <div class="ficha-body">
+        <div class="ficha-field"><label>Cédula</label><span id="fi2-cedula">—</span></div>
+        <div class="ficha-field"><label>Género</label><span id="fi2-genero">—</span></div>
+        <div class="ficha-field"><label>F. Nacimiento</label><span id="fi2-fnac">—</span></div>
+        <div class="ficha-field"><label>Ciudad Nacimiento</label><span id="fi2-cnac">—</span></div>
+        <div class="ficha-field"><label>Ciudad Residencia</label><span id="fi2-cres">—</span></div>
+        <div class="ficha-field"><label>Teléfono</label><span id="fi2-tel">—</span></div>
+        <div class="ficha-field"><label>Correo</label><span id="fi2-correo">—</span></div>
+        <div class="ficha-field"><label>Dirección</label><span id="fi2-dir">—</span></div>
+        <div class="ficha-field"><label>Fecha Ingreso</label><span id="fi2-fing">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
