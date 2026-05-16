@@ -1937,40 +1937,63 @@ async function selDia(fecha) {
         <div style="font-size:1.3rem;font-weight:700;color:var(--blanco)">${pct}%</div>
       </div>
     </div>
-    ${lista.map((a, i) => `
+    ${lista.map((a, i) => {
+      // a.asistio puede ser: true, false, o null/undefined (sin registrar)
+      const estado = a.asistio === true ? 'pres' : a.asistio === false ? 'aus' : 'none';
+      return `
       <div style="display:flex;align-items:center;gap:10px;padding:9px 8px;
                   background:${i%2===0?'var(--sup2)':'transparent'};border-radius:6px;margin-bottom:3px">
         <span style="flex:1;font-size:.85rem;color:var(--texto)">${esc(a.apellidos)}, ${esc(a.nombres)}</span>
-        <div style="display:flex;gap:6px">
+        <div style="display:flex;gap:5px">
           <button id="btn-pres-${a.socio_id}" onclick="toggleAsistencia(${a.socio_id},true)"
-            style="padding:4px 10px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.78rem;
-                   background:${a.asistio?'var(--primario)':'var(--borde)'};
-                   color:${a.asistio?'var(--blanco)':'var(--texto-s)'}">✅</button>
+            title="Presente"
+            style="padding:5px 11px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.82rem;transition:.15s;
+                   background:${estado==='pres'?'#16a34a':'var(--borde)'};
+                   color:${estado==='pres'?'#fff':'var(--texto-s)'}">✔</button>
           <button id="btn-aus-${a.socio_id}" onclick="toggleAsistencia(${a.socio_id},false)"
-            style="padding:4px 10px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.78rem;
-                   background:${!a.asistio?'var(--peligro)':'var(--borde)'};
-                   color:${!a.asistio?'var(--blanco)':'var(--texto-s)'}">❌</button>
+            title="Ausente"
+            style="padding:5px 11px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.82rem;transition:.15s;
+                   background:${estado==='aus'?'#dc2626':'var(--borde)'};
+                   color:${estado==='aus'?'#fff':'var(--texto-s)'}">✘</button>
+          <button id="btn-none-${a.socio_id}" onclick="toggleAsistencia(${a.socio_id},null)"
+            title="Sin registrar"
+            style="padding:5px 11px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.82rem;transition:.15s;
+                   background:${estado==='none'?'var(--primario-dark)':'var(--borde)'};
+                   color:var(--texto-s)">—</button>
         </div>
-      </div>`).join('')}`;
+      </div>`;
+    }).join('')}`;
 
   btnWrap.style.display = '';
 }
 
 function toggleAsistencia(socio_id, val) {
+  // val: true = presente, false = ausente, null = sin registrar
   PS.asistencias[socio_id] = val;
-  const btnP = document.getElementById(`btn-pres-${socio_id}`);
-  const btnA = document.getElementById(`btn-aus-${socio_id}`);
-  if (btnP) { btnP.style.background = val  ? 'var(--primario)' : 'var(--borde)';
-              btnP.style.color      = val  ? 'var(--blanco)'  : 'var(--texto-s)'; }
-  if (btnA) { btnA.style.background = !val ? 'var(--peligro)' : 'var(--borde)';
-              btnA.style.color      = !val ? 'var(--blanco)'  : 'var(--texto-s)'; }
+  const btnP    = document.getElementById(`btn-pres-${socio_id}`);
+  const btnA    = document.getElementById(`btn-aus-${socio_id}`);
+  const btnNone = document.getElementById(`btn-none-${socio_id}`);
+  if (btnP) {
+    btnP.style.background = val === true  ? '#16a34a' : 'var(--borde)';
+    btnP.style.color      = val === true  ? '#fff'    : 'var(--texto-s)';
+  }
+  if (btnA) {
+    btnA.style.background = val === false ? '#dc2626' : 'var(--borde)';
+    btnA.style.color      = val === false ? '#fff'    : 'var(--texto-s)';
+  }
+  if (btnNone) {
+    btnNone.style.background = val === null ? 'var(--primario-dark)' : 'var(--borde)';
+    btnNone.style.color      = 'var(--texto-s)';
+  }
 }
 
 async function guardarAsistencias() {
   const sesion = PS.sesiones[PS.sesionActIdx];
-  const asistencias = Object.entries(PS.asistencias).map(([sid, asistio]) => ({
-    socio_id: parseInt(sid), asistio
-  }));
+  const asistencias = Object.entries(PS.asistencias)
+    .filter(([, asistio]) => asistio !== null)
+    .map(([sid, asistio]) => ({
+      socio_id: parseInt(sid), asistio
+    }));
   if (!asistencias.length) { toast('No hay alumnos para guardar.', 'err'); return; }
   const r = await api('POST',
     `/club/programas/sesion/${sesion.id}/asistencias`, { asistencias });
