@@ -185,8 +185,19 @@ def _migrar_tablas_club():
                 sesion_id   INTEGER NOT NULL REFERENCES programa_sesiones(id) ON DELETE CASCADE,
                 socio_id    INTEGER NOT NULL REFERENCES miembros(id)          ON DELETE CASCADE,
                 club_id     INTEGER NOT NULL REFERENCES clubs(id)             ON DELETE CASCADE,
-                asistio     BOOLEAN DEFAULT NULL,
+                asistio     BOOLEAN NOT NULL DEFAULT FALSE,
                 UNIQUE(sesion_id, socio_id, club_id)
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS programa_comentarios (
+                id          SERIAL      PRIMARY KEY,
+                programa_id INTEGER     NOT NULL REFERENCES programas(id)  ON DELETE CASCADE,
+                club_id     INTEGER     NOT NULL REFERENCES clubs(id)      ON DELETE CASCADE,
+                socio_id    INTEGER     NOT NULL REFERENCES miembros(id)   ON DELETE CASCADE,
+                autor       VARCHAR(10) NOT NULL DEFAULT 'club',
+                texto       TEXT        NOT NULL,
+                creado_en   TIMESTAMP   NOT NULL DEFAULT NOW()
             )
         """)
         conn.commit()
@@ -1117,7 +1128,7 @@ def club_asistencias_get(sesion_id):
         # Traer inscriptos con su asistencia (LEFT JOIN)
         cur.execute("""
             SELECT pi.socio_id, m.nombres, m.apellidos, m.categoria,
-                   pa.asistio
+                   COALESCE(pa.asistio, FALSE)
             FROM programa_inscriptos pi
             JOIN miembros m ON m.id = pi.socio_id
             LEFT JOIN programa_asistencias pa
@@ -1159,13 +1170,62 @@ def club_asistencias_post(sesion_id):
 
         for item in asistencias:
             socio_id = int(item["socio_id"])
-            asistio  = item.get("asistio")
+            asistio  = bool(item.get("asistio", False))
             cur.execute("""
                 INSERT INTO programa_asistencias (sesion_id, socio_id, club_id, asistio)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (sesion_id, socio_id, club_id)
                 DO UPDATE SET asistio = EXCLUDED.asistio
             """, (sesion_id, socio_id, g.club_id, asistio))
+        conn.commit()
+        liberar_miembros(conn)
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# ── Comentarios por alumno en un programa ────────────────────────────────────
+@app.route('/club/programas/<int:prog_id>/comentarios/<int:socio_id>', methods=['GET'])
+@require_club
+def club_comentarios_get(prog_id, socio_id):
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        cur.execute("""
+            SELECT pc.autor, pc.texto,
+                   TO_CHAR(pc.creado_en, 'DD/MM/YYYY HH24:MI'),
+                   COALESCE(c.nombre, 'Admin IKA')
+            FROM programa_comentarios pc
+            LEFT JOIN clubs c ON c.id = pc.club_id
+            WHERE pc.programa_id=%s AND pc.club_id=%s AND pc.socio_id=%s
+            ORDER BY pc.creado_en ASC
+        """, (prog_id, g.club_id, socio_id))
+        rows = cur.fetchall()
+        liberar_miembros(conn)
+        return jsonify([{
+            "autor": r[0], "texto": r[1],
+            "fecha": r[2], "nombre_autor": r[3]
+        } for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/club/programas/<int:prog_id>/comentarios/<int:socio_id>', methods=['POST'])
+@require_club
+def club_comentarios_post(prog_id, socio_id):
+    d     = request.get_json() or {}
+    texto = (d.get("texto") or "").strip()
+    if not texto:
+        return jsonify({"error": "Texto vacío"}), 400
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        cur.execute("""
+            INSERT INTO programa_comentarios
+                (programa_id, club_id, socio_id, autor, texto)
+            VALUES (%s, %s, %s, 'club', %s)
+        """, (prog_id, g.club_id, socio_id, texto))
         conn.commit()
         liberar_miembros(conn)
         return jsonify({"status": "ok"})
