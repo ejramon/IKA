@@ -169,6 +169,26 @@ def _migrar_tablas_club():
                 valor       TEXT
             )
         """)
+        # Tablas de programas (inscriptos y asistencias del club)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS programa_inscriptos (
+                id          SERIAL  PRIMARY KEY,
+                programa_id INTEGER NOT NULL REFERENCES programas(id)  ON DELETE CASCADE,
+                club_id     INTEGER NOT NULL REFERENCES clubs(id)      ON DELETE CASCADE,
+                socio_id    INTEGER NOT NULL REFERENCES miembros(id)   ON DELETE CASCADE,
+                UNIQUE(programa_id, club_id, socio_id)
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS programa_asistencias (
+                id          SERIAL  PRIMARY KEY,
+                sesion_id   INTEGER NOT NULL REFERENCES programa_sesiones(id) ON DELETE CASCADE,
+                socio_id    INTEGER NOT NULL REFERENCES miembros(id)          ON DELETE CASCADE,
+                club_id     INTEGER NOT NULL REFERENCES clubs(id)             ON DELETE CASCADE,
+                asistio     BOOLEAN NOT NULL DEFAULT FALSE,
+                UNIQUE(sesion_id, socio_id, club_id)
+            )
+        """)
         conn.commit()
         liberar_miembros(conn)
         print("[actualizador] ✅ Migración tablas club completada.")
@@ -911,7 +931,236 @@ def club_importar_excel():
         return jsonify({"error": str(e)}), 500
 
 
+# ═════════════════════════════════════════════════════════════════════════════
+# PROGRAMAS DEL CLUB
+# ═════════════════════════════════════════════════════════════════════════════
+
+# ── Listar programas asignados al club ────────────────────────────────────────
+@app.route('/club/programas', methods=['GET'])
+@require_club
+def club_programas_get():
+    """
+    Devuelve los programas que BlackBelt desplegó para este club,
+    junto con si ya fueron configurados (tienen inscriptos).
+    """
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        cur.execute("""
+            SELECT p.id, p.nombre,
+                   TO_CHAR(p.fecha_inicio, 'YYYY-MM-DD'),
+                   TO_CHAR(p.fecha_fin,    'YYYY-MM-DD'),
+                   p.dias_semana, p.horas_diarias, p.estado,
+                   p.descripcion,
+                   (SELECT COUNT(*) FROM programa_inscriptos pi
+                    WHERE pi.programa_id = p.id AND pi.club_id = %s) AS n_inscriptos,
+                   (SELECT COUNT(*) FROM programa_sesiones ps
+                    WHERE ps.programa_id = p.id) AS n_sesiones
+            FROM programas p
+            JOIN programa_clubs pc ON pc.programa_id = p.id
+            WHERE pc.club_id = %s
+            ORDER BY p.fecha_inicio DESC
+        """, (g.club_id, g.club_id))
+        rows = cur.fetchall()
+        liberar_miembros(conn)
+
+        _DIAS = {1:"Lun",2:"Mar",3:"Mié",4:"Jue",5:"Vie",6:"Sáb",7:"Dom"}
+        result = []
+        for row in rows:
+            dias_str = row[4] or ""
+            try:
+                dias_fmt = ", ".join(
+                    _DIAS[int(d)] for d in dias_str.split(",") if d.strip()
+                )
+            except Exception:
+                dias_fmt = dias_str
+            result.append({
+                "id":           row[0],
+                "nombre":       row[1],
+                "fecha_inicio": row[2],
+                "fecha_fin":    row[3],
+                "dias_semana":  dias_str,
+                "dias_fmt":     dias_fmt,
+                "horas":        float(row[5]) if row[5] else 0,
+                "estado":       row[6],
+                "descripcion":  row[7] or "",
+                "n_inscriptos": row[8],
+                "n_sesiones":   row[9],
+                "configurado":  row[8] > 0,
+            })
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── Obtener sesiones de un programa ──────────────────────────────────────────
+@app.route('/club/programas/<int:prog_id>/sesiones', methods=['GET'])
+@require_club
+def club_prog_sesiones(prog_id):
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        # Verificar que el programa pertenece al club
+        cur.execute("""SELECT 1 FROM programa_clubs
+                       WHERE programa_id=%s AND club_id=%s""", (prog_id, g.club_id))
+        if not cur.fetchone():
+            liberar_miembros(conn)
+            return jsonify({"error": "Programa no encontrado"}), 404
+        cur.execute("""
+            SELECT id, TO_CHAR(fecha, 'YYYY-MM-DD'), TO_CHAR(fecha, 'DD/MM/YYYY')
+            FROM programa_sesiones
+            WHERE programa_id = %s
+            ORDER BY fecha
+        """, (prog_id,))
+        rows = cur.fetchall()
+        liberar_miembros(conn)
+        return jsonify([{"id": r[0], "fecha": r[1], "fecha_fmt": r[2]} for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── Obtener / guardar inscriptos del programa ─────────────────────────────────
+@app.route('/club/programas/<int:prog_id>/inscriptos', methods=['GET'])
+@require_club
+def club_prog_inscriptos_get(prog_id):
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        cur.execute("""SELECT 1 FROM programa_clubs
+                       WHERE programa_id=%s AND club_id=%s""", (prog_id, g.club_id))
+        if not cur.fetchone():
+            liberar_miembros(conn)
+            return jsonify({"error": "Programa no encontrado"}), 404
+        cur.execute("""
+            SELECT pi.socio_id, m.nombres, m.apellidos, m.cedula, m.categoria
+            FROM programa_inscriptos pi
+            JOIN miembros m ON m.id = pi.socio_id
+            WHERE pi.programa_id = %s AND pi.club_id = %s
+            ORDER BY m.apellidos, m.nombres
+        """, (prog_id, g.club_id))
+        rows = cur.fetchall()
+        liberar_miembros(conn)
+        return jsonify([{
+            "socio_id": r[0], "nombres": r[1], "apellidos": r[2],
+            "cedula": r[3], "categoria": r[4]
+        } for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/club/programas/<int:prog_id>/inscriptos', methods=['POST'])
+@require_club
+def club_prog_inscriptos_post(prog_id):
+    """Guarda/reemplaza los inscriptos de un programa para este club."""
+    d        = request.get_json() or {}
+    socio_ids = d.get("socio_ids", [])
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        cur.execute("""SELECT 1 FROM programa_clubs
+                       WHERE programa_id=%s AND club_id=%s""", (prog_id, g.club_id))
+        if not cur.fetchone():
+            liberar_miembros(conn)
+            return jsonify({"error": "Programa no encontrado"}), 404
+        # Reemplazar inscriptos
+        cur.execute("""DELETE FROM programa_inscriptos
+                       WHERE programa_id=%s AND club_id=%s""", (prog_id, g.club_id))
+        for sid in socio_ids:
+            cur.execute("""
+                INSERT INTO programa_inscriptos (programa_id, club_id, socio_id)
+                VALUES (%s, %s, %s) ON CONFLICT DO NOTHING
+            """, (prog_id, g.club_id, int(sid)))
+        conn.commit()
+        liberar_miembros(conn)
+        return jsonify({"status": "ok", "inscriptos": len(socio_ids)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── Asistencias por sesión ────────────────────────────────────────────────────
+@app.route('/club/programas/sesion/<int:sesion_id>/asistencias', methods=['GET'])
+@require_club
+def club_asistencias_get(sesion_id):
+    """
+    Devuelve la asistencia de los inscriptos del club para una sesión.
+    Si no hay registro todavía, devuelve los inscriptos con asistio=false.
+    """
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        # Verificar que la sesión pertenece a un programa de este club
+        cur.execute("""
+            SELECT ps.programa_id FROM programa_sesiones ps
+            JOIN programa_clubs pc ON pc.programa_id = ps.programa_id
+            WHERE ps.id = %s AND pc.club_id = %s
+        """, (sesion_id, g.club_id))
+        row = cur.fetchone()
+        if not row:
+            liberar_miembros(conn)
+            return jsonify({"error": "Sesión no encontrada"}), 404
+        prog_id = row[0]
+
+        # Traer inscriptos con su asistencia (LEFT JOIN)
+        cur.execute("""
+            SELECT pi.socio_id, m.nombres, m.apellidos, m.categoria,
+                   COALESCE(pa.asistio, FALSE)
+            FROM programa_inscriptos pi
+            JOIN miembros m ON m.id = pi.socio_id
+            LEFT JOIN programa_asistencias pa
+                ON pa.sesion_id = %s AND pa.socio_id = pi.socio_id AND pa.club_id = %s
+            WHERE pi.programa_id = %s AND pi.club_id = %s
+            ORDER BY m.apellidos, m.nombres
+        """, (sesion_id, g.club_id, prog_id, g.club_id))
+        rows = cur.fetchall()
+        liberar_miembros(conn)
+        return jsonify([{
+            "socio_id": r[0], "nombres": r[1], "apellidos": r[2],
+            "categoria": r[3], "asistio": r[4]
+        } for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/club/programas/sesion/<int:sesion_id>/asistencias', methods=['POST'])
+@require_club
+def club_asistencias_post(sesion_id):
+    """
+    Guarda/actualiza la asistencia de todos los alumnos de una sesión.
+    Body: { asistencias: [{socio_id: N, asistio: true/false}, ...] }
+    """
+    d = request.get_json() or {}
+    asistencias = d.get("asistencias", [])
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        # Verificar que la sesión pertenece al club
+        cur.execute("""
+            SELECT ps.programa_id FROM programa_sesiones ps
+            JOIN programa_clubs pc ON pc.programa_id = ps.programa_id
+            WHERE ps.id = %s AND pc.club_id = %s
+        """, (sesion_id, g.club_id))
+        if not cur.fetchone():
+            liberar_miembros(conn)
+            return jsonify({"error": "Sesión no encontrada"}), 404
+
+        for item in asistencias:
+            socio_id = int(item["socio_id"])
+            asistio  = bool(item.get("asistio", False))
+            cur.execute("""
+                INSERT INTO programa_asistencias (sesion_id, socio_id, club_id, asistio)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (sesion_id, socio_id, club_id)
+                DO UPDATE SET asistio = EXCLUDED.asistio
+            """, (sesion_id, socio_id, g.club_id, asistio))
+        conn.commit()
+        liberar_miembros(conn)
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ─────────────────────────────────────────────────────────────
+# INICIO DEL SERVIDOR
 # ─────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5002))
