@@ -1433,28 +1433,100 @@ function esc(str) {
     <span class="club-name" id="seg-club-name"></span>
     <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
   </div>
-  <div class="content">
-    <!-- Selector de sesión -->
-    <div style="margin-bottom:16px">
-      <div class="section-title">📆 Seleccioná la sesión</div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="navSesion(-1)">◀ Anterior</button>
-        <select id="seg-sesion-sel" onchange="cargarAsistencias()"
-                style="flex:1;background:var(--sup2);border:1px solid var(--borde);
-                       color:var(--texto);padding:8px 12px;border-radius:8px;font-size:.88rem;outline:none">
-        </select>
-        <button class="btn btn-ghost btn-sm" onclick="navSesion(1)">Siguiente ▶</button>
-      </div>
-    </div>
-    <!-- Lista de asistencia -->
-    <div class="section-title">📋 Lista de Asistencia</div>
-    <div id="seg-lista"><div class="spinner">Cargando...</div></div>
-    <!-- Guardar -->
-    <div style="margin-top:18px">
-      <button class="btn btn-blue" onclick="guardarAsistencias()" style="width:100%;padding:14px">
-        💾 GUARDAR ASISTENCIA DE ESTA SESIÓN
+  <div class="content" style="padding:14px">
+
+    <!-- Pestañas -->
+    <div style="display:flex;border-bottom:2px solid var(--borde);margin-bottom:16px">
+      <button id="tab-sesiones" onclick="segTab('sesiones')"
+        style="flex:1;padding:10px;background:none;border:none;border-bottom:3px solid var(--acento);
+               color:var(--acento);font-weight:700;font-size:.88rem;cursor:pointer;margin-bottom:-2px">
+        📅 Sesiones
+      </button>
+      <button id="tab-alumno" onclick="segTab('alumno')"
+        style="flex:1;padding:10px;background:none;border:none;border-bottom:3px solid transparent;
+               color:var(--texto-s);font-weight:700;font-size:.88rem;cursor:pointer;margin-bottom:-2px">
+        👤 Por Alumno
       </button>
     </div>
+
+    <!-- ═══ PESTAÑA SESIONES ═══ -->
+    <div id="pane-sesiones">
+      <!-- Calendario -->
+      <div style="background:var(--sup);border:1px solid var(--borde);border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <button onclick="calNav(-1)"
+            style="background:none;border:1px solid var(--borde);color:var(--texto-s);
+                   padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:700">◀</button>
+          <span id="cal-mes-titulo" style="font-weight:700;color:var(--texto);font-size:.95rem"></span>
+          <button onclick="calNav(1)"
+            style="background:none;border:1px solid var(--borde);color:var(--texto-s);
+                   padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:700">▶</button>
+        </div>
+        <!-- Cabecera días -->
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">
+          ${['L','M','X','J','V','S','D'].map(d =>
+            `<div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--texto-s);padding:4px 0">${d}</div>`
+          ).join('')}
+        </div>
+        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
+      </div>
+
+      <!-- Bloque desplegable de asistencia -->
+      <div id="bloque-asistencia" style="background:var(--sup);border:1px solid var(--borde);border-radius:12px;overflow:hidden">
+        <button onclick="toggleBloque('asistencia')"
+          style="width:100%;padding:12px 16px;background:none;border:none;cursor:pointer;
+                 display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;color:var(--texto);font-size:.9rem">
+            📋 Asistencia — <span id="bloque-asist-titulo" style="color:var(--texto-s)">seleccioná un día</span>
+          </span>
+          <span id="flecha-asistencia" style="color:var(--texto-s);font-size:.8rem">▼</span>
+        </button>
+        <div id="body-asistencia" style="padding:0 14px 14px">
+          <div id="seg-lista" style="color:var(--texto-s);font-size:.85rem;padding:10px 0;text-align:center">
+            Seleccioná un día del calendario para ver la asistencia.
+          </div>
+          <div id="seg-guardar-wrap" style="display:none;margin-top:12px">
+            <button class="btn btn-blue" onclick="guardarAsistencias()" style="width:100%;padding:12px">
+              💾 GUARDAR ASISTENCIA
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PESTAÑA POR ALUMNO ═══ -->
+    <div id="pane-alumno" style="display:none">
+      <!-- Bloque desplegable porcentaje -->
+      <div id="bloque-pct" style="background:var(--sup);border:1px solid var(--borde);border-radius:12px;overflow:hidden;margin-bottom:12px">
+        <button onclick="toggleBloque('pct')"
+          style="width:100%;padding:12px 16px;background:none;border:none;cursor:pointer;
+                 display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;color:var(--texto);font-size:.9rem">📊 Porcentaje de Asistencia</span>
+          <span id="flecha-pct" style="color:var(--texto-s);font-size:.8rem">▼</span>
+        </button>
+        <div id="body-pct" style="padding:0 14px 14px">
+          <div style="margin-bottom:12px">
+            <label style="font-size:.72rem;font-weight:700;color:var(--texto-s);text-transform:uppercase;display:block;margin-bottom:6px">Alumno</label>
+            <select id="sel-alumno-pct" onchange="cargarPct()"
+              style="width:100%;background:var(--sup2);border:1px solid var(--borde);color:var(--texto);
+                     padding:9px 12px;border-radius:8px;font-size:.88rem;outline:none">
+              <option value="">— Seleccioná un alumno —</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap">
+            <div style="flex:1;min-width:160px">
+              <label style="font-size:.72rem;font-weight:700;color:var(--texto-s);text-transform:uppercase;display:block;margin-bottom:6px">Calcular hasta</label>
+              <input type="date" id="pct-fecha-hasta"
+                style="width:100%;background:var(--sup2);border:1px solid var(--borde);color:var(--texto);
+                       padding:9px 12px;border-radius:8px;font-size:.88rem;outline:none">
+            </div>
+            <button class="btn btn-blue btn-sm" onclick="cargarPct()">Calcular</button>
+          </div>
+          <div id="pct-resultado" style="text-align:center;padding:16px 0"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1621,148 +1693,216 @@ async function guardarInscriptos() {
   goTo('programas');
 }
 
-// ── Seguimiento (asistencias) ─────────────────────────────────
+// ── Seguimiento ───────────────────────────────────────────────
+const CAL = { anio: 0, mes: 0 }; // mes activo en el calendario
+const _MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
 async function abrirSeguimiento(prog_id) {
   PS.currentProg = PS.programas.find(p => p.id === prog_id);
   if (!PS.currentProg) return;
-
   showScreen('seguimiento');
   document.getElementById('seg-titulo').textContent =
     `📊 ${PS.currentProg.nombre.toUpperCase()}`;
   document.getElementById('seg-club-name').textContent = S.club ? S.club.nombre : '';
 
-  // Cargar sesiones
   const r = await api('GET', `/club/programas/${prog_id}/sesiones`);
-  if (!r || !r.ok) {
-    toast('Error al cargar sesiones.', 'err'); return;
-  }
+  if (!r || !r.ok) { toast('Error al cargar sesiones.', 'err'); return; }
   PS.sesiones = r.data;
-  if (!PS.sesiones.length) {
-    document.getElementById('seg-lista').innerHTML =
-      '<div class="badge-empty">Este programa no tiene sesiones generadas.</div>';
-    return;
+
+  // Ir al mes de la sesión más cercana a hoy
+  const hoy = new Date();
+  CAL.anio = hoy.getFullYear();
+  CAL.mes  = hoy.getMonth();
+  const cercana = PS.sesiones.find(s => s.fecha >= hoy.toISOString().split('T')[0]);
+  if (cercana) {
+    const d = new Date(cercana.fecha + 'T00:00:00');
+    CAL.anio = d.getFullYear(); CAL.mes = d.getMonth();
   }
 
-  // Llenar selector
-  const sel = document.getElementById('seg-sesion-sel');
-  sel.innerHTML = PS.sesiones.map((s, i) =>
-    `<option value="${i}">${s.fecha_fmt}</option>`
-  ).join('');
+  // Fecha por defecto para cálculo de pct
+  document.getElementById('pct-fecha-hasta').value = hoy.toISOString().split('T')[0];
 
-  // Ir a la sesión más cercana a hoy
-  const hoy = new Date().toISOString().split('T')[0];
-  PS.sesionActIdx = PS.sesiones.findIndex(s => s.fecha >= hoy);
-  if (PS.sesionActIdx === -1) PS.sesionActIdx = PS.sesiones.length - 1;
-  sel.value = PS.sesionActIdx;
-  await cargarAsistencias();
+  renderCalendario();
+  segTab('sesiones');
+
+  // Cargar alumnos en el selector de pct
+  const ra = await api('GET', `/club/programas/${prog_id}/inscriptos`);
+  const sel = document.getElementById('sel-alumno-pct');
+  sel.innerHTML = '<option value="">— Seleccioná un alumno —</option>';
+  if (ra && ra.ok) {
+    ra.data.forEach(a => {
+      const o = document.createElement('option');
+      o.value = a.socio_id;
+      o.textContent = `${a.apellidos}, ${a.nombres}`;
+      sel.appendChild(o);
+    });
+  }
 }
 
-function navSesion(dir) {
-  const sel = document.getElementById('seg-sesion-sel');
-  const nuevo = parseInt(sel.value) + dir;
-  if (nuevo < 0 || nuevo >= PS.sesiones.length) return;
-  sel.value = nuevo;
-  cargarAsistencias();
+function segTab(tab) {
+  const esSes = tab === 'sesiones';
+  document.getElementById('pane-sesiones').style.display = esSes ? '' : 'none';
+  document.getElementById('pane-alumno').style.display   = esSes ? 'none' : '';
+  const tS = document.getElementById('tab-sesiones');
+  const tA = document.getElementById('tab-alumno');
+  tS.style.borderBottomColor = esSes ? 'var(--acento)' : 'transparent';
+  tS.style.color = esSes ? 'var(--acento)' : 'var(--texto-s)';
+  tA.style.borderBottomColor = !esSes ? 'var(--acento)' : 'transparent';
+  tA.style.color = !esSes ? 'var(--acento)' : 'var(--texto-s)';
 }
 
-async function cargarAsistencias() {
-  const idx = parseInt(document.getElementById('seg-sesion-sel').value);
-  PS.sesionActIdx = idx;
-  const sesion = PS.sesiones[idx];
+function toggleBloque(id) {
+  const body   = document.getElementById(`body-${id}`);
+  const flecha = document.getElementById(`flecha-${id}`);
+  const abierto = body.style.display !== 'none';
+  body.style.display   = abierto ? 'none' : '';
+  flecha.textContent   = abierto ? '▶' : '▼';
+}
+
+function calNav(dir) {
+  CAL.mes += dir;
+  if (CAL.mes > 11) { CAL.mes = 0;  CAL.anio++; }
+  if (CAL.mes < 0)  { CAL.mes = 11; CAL.anio--; }
+  renderCalendario();
+}
+
+function renderCalendario() {
+  document.getElementById('cal-mes-titulo').textContent =
+    `${_MESES[CAL.mes]} ${CAL.anio}`;
+
+  const grid  = document.getElementById('cal-grid');
+  const hoy   = new Date().toISOString().split('T')[0];
+  const sesSet = new Set(PS.sesiones.map(s => s.fecha));
+
+  // Primer día del mes
+  const primerDia = new Date(CAL.anio, CAL.mes, 1);
+  let inicioCol = primerDia.getDay(); // 0=dom...6=sáb
+  inicioCol = inicioCol === 0 ? 6 : inicioCol - 1; // ajustar a lun=0
+
+  const diasEnMes = new Date(CAL.anio, CAL.mes + 1, 0).getDate();
+
+  let html = '';
+  // Celdas vacías al inicio
+  for (let i = 0; i < inicioCol; i++) {
+    html += `<div></div>`;
+  }
+  for (let d = 1; d <= diasEnMes; d++) {
+    const mm   = String(CAL.mes + 1).padStart(2, '0');
+    const dd   = String(d).padStart(2, '0');
+    const fecha = `${CAL.anio}-${mm}-${dd}`;
+    const esSesion = sesSet.has(fecha);
+    const esHoy    = fecha === hoy;
+
+    let bg    = 'transparent';
+    let color = 'var(--texto-s)';
+    let borde = 'none';
+    let peso  = '400';
+    let cursor= 'default';
+    let radio = '6px';
+
+    if (esSesion) {
+      bg     = 'var(--primario)';
+      color  = 'var(--blanco)';
+      peso   = '700';
+      cursor = 'pointer';
+      radio  = '8px';
+    }
+    if (esHoy) {
+      borde = `2px solid var(--acento)`;
+    }
+
+    html += `<div onclick="${esSesion ? `selDia('${fecha}')` : ''}"
+      style="text-align:center;padding:7px 2px;border-radius:${radio};
+             background:${bg};color:${color};font-size:.83rem;font-weight:${peso};
+             cursor:${cursor};border:${borde};transition:.15s;
+             ${esSesion ? 'box-shadow:0 2px 6px rgba(0,0,0,.2)' : ''}"
+      ${esSesion ? `onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'"` : ''}
+    >${d}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+async function selDia(fecha) {
+  const sesion = PS.sesiones.find(s => s.fecha === fecha);
+  if (!sesion) return;
+  PS.sesionActIdx = PS.sesiones.indexOf(sesion);
+
+  // Resaltar día seleccionado
+  renderCalendario();
+  const grid = document.getElementById('cal-grid');
+  const [,, dd] = fecha.split('-');
+  const celdas = grid.querySelectorAll('div');
+  celdas.forEach(c => {
+    if (c.textContent.trim() === String(parseInt(dd)) &&
+        c.style.background === 'rgb(13, 31, 60)') {
+      c.style.outline = '2px solid var(--acento)';
+    }
+  });
+
+  document.getElementById('bloque-asist-titulo').textContent = sesion.fecha_fmt;
   const wrap = document.getElementById('seg-lista');
+  const btnWrap = document.getElementById('seg-guardar-wrap');
   wrap.innerHTML = '<div class="spinner">Cargando...</div>';
+  btnWrap.style.display = 'none';
 
   const r = await api('GET', `/club/programas/sesion/${sesion.id}/asistencias`);
   if (!r || !r.ok) {
-    wrap.innerHTML = '<div class="badge-empty">Error al cargar asistencias.</div>';
-    return;
+    wrap.innerHTML = '<div class="badge-empty">Error al cargar.</div>'; return;
   }
-
   const lista = r.data;
   PS.asistencias = {};
   lista.forEach(a => { PS.asistencias[a.socio_id] = a.asistio; });
 
   if (!lista.length) {
-    wrap.innerHTML = '<div class="badge-empty">No hay alumnos inscriptos en este programa.</div>';
-    return;
+    wrap.innerHTML = '<div class="badge-empty">No hay alumnos inscriptos.</div>'; return;
   }
 
-  // Resumen
   const presentes = lista.filter(a => a.asistio).length;
-  const pct = lista.length ? Math.round(presentes / lista.length * 100) : 0;
+  const pct = Math.round(presentes / lista.length * 100);
 
   wrap.innerHTML = `
-    <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap">
-      <div class="ficha-card" style="padding:12px 18px;flex:1;min-width:120px;margin:0">
-        <div style="font-size:.7rem;font-weight:700;color:var(--texto-s);text-transform:uppercase">Presentes</div>
-        <div style="font-size:1.4rem;font-weight:700;color:var(--exito)">${presentes}</div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:90px;background:var(--sup2);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:.68rem;font-weight:700;color:var(--texto-s);text-transform:uppercase">Presentes</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--texto)">${presentes}</div>
       </div>
-      <div class="ficha-card" style="padding:12px 18px;flex:1;min-width:120px;margin:0">
-        <div style="font-size:.7rem;font-weight:700;color:var(--texto-s);text-transform:uppercase">Ausentes</div>
-        <div style="font-size:1.4rem;font-weight:700;color:var(--peligro)">${lista.length - presentes}</div>
+      <div style="flex:1;min-width:90px;background:var(--sup2);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:.68rem;font-weight:700;color:var(--texto-s);text-transform:uppercase">Ausentes</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--texto)">${lista.length - presentes}</div>
       </div>
-      <div class="ficha-card" style="padding:12px 18px;flex:1;min-width:120px;margin:0">
-        <div style="font-size:.7rem;font-weight:700;color:var(--texto-s);text-transform:uppercase">Asistencia</div>
-        <div style="font-size:1.4rem;font-weight:700;color:var(--acento)">${pct}%</div>
+      <div style="flex:1;min-width:90px;background:var(--primario);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:.68rem;font-weight:700;color:var(--borde);text-transform:uppercase">Asistencia</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--blanco)">${pct}%</div>
       </div>
     </div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Nombres</th><th>Apellidos</th><th>Categoría</th>
-            <th style="text-align:center;min-width:120px">Asistencia</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${lista.map((a, i) => `
-            <tr style="background:${i%2===0?'var(--sup)':'var(--fondo)'}">
-              <td>${esc(a.nombres)}</td>
-              <td>${esc(a.apellidos)}</td>
-              <td>${esc(a.categoria||'—')}</td>
-              <td style="text-align:center">
-                <div style="display:flex;gap:8px;justify-content:center">
-                  <button id="btn-pres-${a.socio_id}"
-                    onclick="toggleAsistencia(${a.socio_id}, true)"
-                    style="padding:4px 12px;border-radius:6px;border:none;cursor:pointer;
-                           font-weight:700;font-size:.82rem;transition:.15s;
-                           background:${a.asistio ? 'var(--exito)' : 'var(--sup2)'};
-                           color:${a.asistio ? '#fff' : 'var(--texto-s)'}">
-                    ✅ Presente
-                  </button>
-                  <button id="btn-aus-${a.socio_id}"
-                    onclick="toggleAsistencia(${a.socio_id}, false)"
-                    style="padding:4px 12px;border-radius:6px;border:none;cursor:pointer;
-                           font-weight:700;font-size:.82rem;transition:.15s;
-                           background:${!a.asistio ? 'var(--peligro)' : 'var(--sup2)'};
-                           color:${!a.asistio ? '#fff' : 'var(--texto-s)'}">
-                    ❌ Ausente
-                  </button>
-                </div>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
+    ${lista.map((a, i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 8px;
+                  background:${i%2===0?'var(--sup2)':'transparent'};border-radius:6px;margin-bottom:3px">
+        <span style="flex:1;font-size:.85rem;color:var(--texto)">${esc(a.apellidos)}, ${esc(a.nombres)}</span>
+        <div style="display:flex;gap:6px">
+          <button id="btn-pres-${a.socio_id}" onclick="toggleAsistencia(${a.socio_id},true)"
+            style="padding:4px 10px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.78rem;
+                   background:${a.asistio?'var(--primario)':'var(--borde)'};
+                   color:${a.asistio?'var(--blanco)':'var(--texto-s)'}">✅</button>
+          <button id="btn-aus-${a.socio_id}" onclick="toggleAsistencia(${a.socio_id},false)"
+            style="padding:4px 10px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.78rem;
+                   background:${!a.asistio?'var(--peligro)':'var(--borde)'};
+                   color:${!a.asistio?'var(--blanco)':'var(--texto-s)'}">❌</button>
+        </div>
+      </div>`).join('')}`;
+
+  btnWrap.style.display = '';
 }
 
 function toggleAsistencia(socio_id, val) {
   PS.asistencias[socio_id] = val;
   const btnP = document.getElementById(`btn-pres-${socio_id}`);
   const btnA = document.getElementById(`btn-aus-${socio_id}`);
-  if (btnP) {
-    btnP.style.background = val ? 'var(--exito)' : 'var(--sup2)';
-    btnP.style.color      = val ? '#fff' : 'var(--texto-s)';
-  }
-  if (btnA) {
-    btnA.style.background = !val ? 'var(--peligro)' : 'var(--sup2)';
-    btnA.style.color      = !val ? '#fff' : 'var(--texto-s)';
-  }
-  // Actualizar resumen en tiempo real
-  const total     = Object.keys(PS.asistencias).length;
-  const presentes = Object.values(PS.asistencias).filter(Boolean).length;
-  const pct       = total ? Math.round(presentes / total * 100) : 0;
-  // mini update visual sin recargar toda la tabla
+  if (btnP) { btnP.style.background = val  ? 'var(--primario)' : 'var(--borde)';
+              btnP.style.color      = val  ? 'var(--blanco)'  : 'var(--texto-s)'; }
+  if (btnA) { btnA.style.background = !val ? 'var(--peligro)' : 'var(--borde)';
+              btnA.style.color      = !val ? 'var(--blanco)'  : 'var(--texto-s)'; }
 }
 
 async function guardarAsistencias() {
@@ -1770,14 +1910,49 @@ async function guardarAsistencias() {
   const asistencias = Object.entries(PS.asistencias).map(([sid, asistio]) => ({
     socio_id: parseInt(sid), asistio
   }));
-  if (!asistencias.length) {
-    toast('No hay alumnos para guardar.', 'err'); return;
-  }
+  if (!asistencias.length) { toast('No hay alumnos para guardar.', 'err'); return; }
   const r = await api('POST',
     `/club/programas/sesion/${sesion.id}/asistencias`, { asistencias });
   if (!r) return;
   if (!r.ok) { toast(r.data.error || 'Error al guardar.', 'err'); return; }
-  toast(`✅ Asistencia del ${sesion.fecha_fmt} guardada correctamente.`);
+  toast(`✅ Asistencia del ${sesion.fecha_fmt} guardada.`);
+  renderCalendario();
+}
+
+async function cargarPct() {
+  const socio_id = document.getElementById('sel-alumno-pct').value;
+  if (!socio_id) return;
+  const hastaVal = document.getElementById('pct-fecha-hasta').value
+    || new Date().toISOString().split('T')[0];
+  const wrap = document.getElementById('pct-resultado');
+  wrap.innerHTML = '<div class="spinner">Calculando...</div>';
+
+  // Sesiones hasta la fecha límite
+  const sesiones = PS.sesiones.filter(s => s.fecha <= hastaVal);
+  if (!sesiones.length) {
+    wrap.innerHTML = '<div class="badge-empty">Sin sesiones hasta esa fecha.</div>'; return;
+  }
+
+  // Cargar asistencias de cada sesión para este alumno
+  let presentes = 0;
+  for (const ses of sesiones) {
+    const r = await api('GET', `/club/programas/sesion/${ses.id}/asistencias`);
+    if (r && r.ok) {
+      const alumno = r.data.find(a => a.socio_id === parseInt(socio_id));
+      if (alumno && alumno.asistio) presentes++;
+    }
+  }
+  const total = sesiones.length;
+  const pct   = Math.round(presentes / total * 100);
+
+  wrap.innerHTML = `
+    <div style="font-size:3rem;font-weight:800;color:var(--acento);line-height:1">${pct}%</div>
+    <div style="font-size:.88rem;color:var(--texto-s);margin-top:6px">
+      ${presentes} de ${total} sesiones asistidas
+    </div>
+    <div style="font-size:.75rem;color:var(--texto-s);margin-top:4px">
+      hasta el ${hastaVal.split('-').reverse().join('/')}
+    </div>`;
 }
 </script>
 
