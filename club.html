@@ -477,6 +477,10 @@ tbody td{padding:9px 12px;vertical-align:middle}
         <div class="ficha-field"><label>Dirección</label><span id="fi-dir">—</span></div>
         <div class="ficha-field"><label>Fecha Ingreso</label><span id="fi-fing">—</span></div>
         <div class="ficha-field"><label>ID Sistema</label><span id="fi-id" style="color:var(--texto-s)">—</span></div>
+        <div class="ficha-field" id="fi-subcat-wrap" style="display:none;grid-column:1/-1">
+          <label>Subcategorías</label>
+          <span id="fi-subcat" style="color:var(--acento);font-weight:700">—</span>
+        </div>
       </div>
       <div class="ficha-actions">
         <button class="btn btn-blue btn-sm"   id="btn-editar-ficha">✏️ Editar</button>
@@ -993,11 +997,12 @@ async function verFicha(id) {
   S.currentId = id;
   showScreen('ficha');
   updateClubNames();
-  const m = S.miembros.find(x => x.id === id);
-  if (m) renderFicha(m);
+  // Siempre pedir datos frescos para incluir subcategorías actualizadas
+  const r = await api('GET', `/club/miembros/${id}`);
+  if (r && r.ok) renderFicha(r.data);
   else {
-    const r = await api('GET', `/club/miembros/${id}`);
-    if (r && r.ok) renderFicha(r.data);
+    const m = S.miembros.find(x => x.id === id);
+    if (m) renderFicha(m);
   }
   loadPlantillas();
   loadHistorial(id);
@@ -1032,6 +1037,15 @@ function renderFicha(m) {
   document.getElementById('fi-dir').textContent       = m.direccion         || '—';
   document.getElementById('fi-fing').textContent      = fmtDate(m.fecha_ingreso);
   document.getElementById('fi-id').textContent        = m.id;
+  // Subcategorías
+  const subcats = m.subcategorias || [];
+  const scWrap  = document.getElementById('fi-subcat-wrap');
+  if (subcats.length) {
+    document.getElementById('fi-subcat').textContent = subcats.join(' · ');
+    scWrap.style.display = '';
+  } else {
+    scWrap.style.display = 'none';
+  }
 }
 
 async function loadPlantillas() {
@@ -2133,6 +2147,14 @@ async function verFichaInscripto(socio_id) {
   document.getElementById('fi2-correo').textContent = m.correo             || '—';
   document.getElementById('fi2-dir').textContent    = m.direccion          || '—';
   document.getElementById('fi2-fing').textContent   = fmtDate(m.fecha_ingreso);
+  const subcats2 = m.subcategorias || [];
+  const scWrap2  = document.getElementById('fi2-subcat-wrap');
+  if (subcats2.length) {
+    document.getElementById('fi2-subcat').textContent = subcats2.join(' · ');
+    scWrap2.style.display = '';
+  } else {
+    scWrap2.style.display = 'none';
+  }
 }
 </script>
 
@@ -2176,6 +2198,10 @@ async function verFichaInscripto(socio_id) {
         <div class="ficha-field"><label>Correo</label><span id="fi2-correo">—</span></div>
         <div class="ficha-field"><label>Dirección</label><span id="fi2-dir">—</span></div>
         <div class="ficha-field"><label>Fecha Ingreso</label><span id="fi2-fing">—</span></div>
+        <div class="ficha-field" id="fi2-subcat-wrap" style="display:none;grid-column:1/-1">
+          <label>Subcategorías</label>
+          <span id="fi2-subcat" style="color:var(--acento);font-weight:700">—</span>
+        </div>
       </div>
     </div>
   </div>
