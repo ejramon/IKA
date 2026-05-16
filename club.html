@@ -400,6 +400,9 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <div class="home-btn" onclick="goTo('categorias')">
       <span class="icon">⚙️</span><span class="label">GESTIONAR CATEGORÍAS</span>
     </div>
+    <div class="home-btn" onclick="goTo('programas')">
+      <span class="icon">📅</span><span class="label">PROGRAMAS</span>
+    </div>
     <div class="home-btn full" onclick="goTo('config')">
       <span class="icon">🔧</span><span class="label">CONFIGURACIÓN</span>
     </div>
@@ -708,6 +711,7 @@ async function goTo(screen) {
   if (screen === 'base')       await loadMiembros();
   if (screen === 'nuevo')      await prepareForm(null);
   if (screen === 'categorias') await loadCategorias();
+  if (screen === 'programas')  await loadProgramas();
   if (screen === 'config')     await loadConfig();
   if (screen === 'buscar') {
     document.getElementById('b-cedula').value = '';
@@ -1379,5 +1383,402 @@ function esc(str) {
   }
 })();
 </script>
+<!-- ════════════════════════════ PROGRAMAS ════════════════════════════ -->
+<div class="screen" id="screen-programas">
+  <div class="g-header">
+    <button class="btn-back" onclick="goHome()">← Inicio</button>
+    <span class="logo">📅 PROGRAMAS</span>
+    <span class="club-name" id="prog-club-name"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
+  </div>
+  <div class="content">
+    <div class="btn-bar">
+      <button class="btn btn-ghost btn-sm" onclick="loadProgramas()">🔄 Actualizar</button>
+    </div>
+    <div id="prog-list"><div class="spinner">Cargando programas...</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ CONFIGURAR PROGRAMA ════════════════════════════ -->
+<div class="screen" id="screen-config-prog">
+  <div class="g-header">
+    <button class="btn-back" onclick="goTo('programas')">← Programas</button>
+    <span class="logo" id="config-prog-titulo">⚙️ CONFIGURAR PROGRAMA</span>
+    <span class="club-name" id="config-prog-club"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
+  </div>
+  <div class="content">
+    <!-- Info del programa -->
+    <div class="ficha-card" id="config-prog-info" style="margin-bottom:16px"></div>
+    <!-- Selección de alumnos -->
+    <div class="section-title">👥 Seleccioná los alumnos que participan</div>
+    <div class="btn-bar" style="margin-bottom:10px">
+      <button class="btn btn-blue btn-sm" onclick="selTodos(true)">✅ Seleccionar todos</button>
+      <button class="btn btn-ghost btn-sm" onclick="selTodos(false)">☐ Deseleccionar todos</button>
+    </div>
+    <div id="config-prog-alumnos"><div class="spinner">Cargando alumnos...</div></div>
+    <div style="margin-top:18px">
+      <button class="btn btn-blue" onclick="guardarInscriptos()" style="width:100%;padding:14px">
+        💾 GUARDAR Y GENERAR PROGRAMA
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════ SEGUIMIENTO ════════════════════════════ -->
+<div class="screen" id="screen-seguimiento">
+  <div class="g-header">
+    <button class="btn-back" onclick="goTo('programas')">← Programas</button>
+    <span class="logo" id="seg-titulo">📊 SEGUIMIENTO</span>
+    <span class="club-name" id="seg-club-name"></span>
+    <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
+  </div>
+  <div class="content">
+    <!-- Selector de sesión -->
+    <div style="margin-bottom:16px">
+      <div class="section-title">📆 Seleccioná la sesión</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="navSesion(-1)">◀ Anterior</button>
+        <select id="seg-sesion-sel" onchange="cargarAsistencias()"
+                style="flex:1;background:var(--sup2);border:1px solid var(--borde);
+                       color:var(--texto);padding:8px 12px;border-radius:8px;font-size:.88rem;outline:none">
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="navSesion(1)">Siguiente ▶</button>
+      </div>
+    </div>
+    <!-- Lista de asistencia -->
+    <div class="section-title">📋 Lista de Asistencia</div>
+    <div id="seg-lista"><div class="spinner">Cargando...</div></div>
+    <!-- Guardar -->
+    <div style="margin-top:18px">
+      <button class="btn btn-blue" onclick="guardarAsistencias()" style="width:100%;padding:14px">
+        💾 GUARDAR ASISTENCIA DE ESTA SESIÓN
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// ESTADO PROGRAMAS
+// ══════════════════════════════════════════════════════════════
+const PS = {
+  programas:    [],
+  currentProg:  null,   // objeto programa seleccionado
+  sesiones:     [],     // sesiones del prog actual
+  alumnos:      [],     // todos los miembros del club
+  inscriptos:   new Set(), // socio_ids ya inscriptos
+  asistencias:  {},     // {socio_id: bool} para la sesión activa
+  sesionActIdx: 0,      // índice actual en PS.sesiones
+};
+
+// ── Cargar pantalla programas ─────────────────────────────────
+async function loadProgramas() {
+  document.getElementById('prog-club-name').textContent = S.club ? S.club.nombre : '';
+  const wrap = document.getElementById('prog-list');
+  wrap.innerHTML = '<div class="spinner">Cargando programas...</div>';
+  const r = await api('GET', '/club/programas');
+  if (!r || !r.ok) {
+    wrap.innerHTML = '<div class="badge-empty">No se pudieron cargar los programas.</div>';
+    return;
+  }
+  PS.programas = r.data;
+  if (!PS.programas.length) {
+    wrap.innerHTML = '<div class="badge-empty" style="padding:20px 0">No hay programas asignados a tu club todavía.</div>';
+    return;
+  }
+  wrap.innerHTML = PS.programas.map(p => `
+    <div class="ficha-card" style="margin-bottom:14px">
+      <div class="ficha-header" style="padding:14px 18px">
+        <div>
+          <div class="ficha-nombre">${esc(p.nombre)}</div>
+          <div style="margin-top:4px">
+            <span class="ficha-cat" style="background:rgba(74,143,232,.2);color:var(--acento)">
+              📅 IKA Oficial
+            </span>
+            <span class="ficha-cat" style="background:${p.configurado ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.1)'};
+                  color:${p.configurado ? 'var(--exito)' : 'var(--peligro)'}; margin-left:6px">
+              ${p.configurado ? `✅ Configurado (${p.n_inscriptos} alumnos)` : '⚠️ Sin configurar'}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="ficha-body" style="grid-template-columns:1fr 1fr 1fr 1fr">
+        <div class="ficha-field"><label>Inicio</label><span>${fmtDate(p.fecha_inicio)}</span></div>
+        <div class="ficha-field"><label>Fin</label><span>${fmtDate(p.fecha_fin)}</span></div>
+        <div class="ficha-field"><label>Días</label><span>${esc(p.dias_fmt)}</span></div>
+        <div class="ficha-field"><label>Hs/Sesión</label><span>${p.horas}hs</span></div>
+        ${p.descripcion ? `<div class="ficha-field" style="grid-column:1/-1"><label>Descripción</label><span>${esc(p.descripcion)}</span></div>` : ''}
+        <div class="ficha-field"><label>Sesiones</label><span>${p.n_sesiones}</span></div>
+      </div>
+      <div class="ficha-actions">
+        <button class="btn btn-blue btn-sm" onclick="abrirConfigurar(${p.id})">
+          ⚙️ ${p.configurado ? 'Editar Inscriptos' : 'Configurar'}
+        </button>
+        ${p.configurado ? `
+        <button class="btn btn-ghost btn-sm" onclick="abrirSeguimiento(${p.id})">
+          📊 Seguimiento
+        </button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Configurar programa (inscriptos) ─────────────────────────
+async function abrirConfigurar(prog_id) {
+  PS.currentProg = PS.programas.find(p => p.id === prog_id);
+  if (!PS.currentProg) return;
+
+  showScreen('config-prog');
+  document.getElementById('config-prog-titulo').textContent =
+    `⚙️ ${PS.currentProg.nombre.toUpperCase()}`;
+  document.getElementById('config-prog-club').textContent = S.club ? S.club.nombre : '';
+
+  // Info del programa
+  document.getElementById('config-prog-info').innerHTML = `
+    <div class="ficha-header">
+      <div>
+        <div class="ficha-nombre">${esc(PS.currentProg.nombre)}</div>
+        <div class="ficha-cat">📅 IKA Oficial</div>
+      </div>
+    </div>
+    <div class="ficha-body" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div class="ficha-field"><label>Inicio</label><span>${fmtDate(PS.currentProg.fecha_inicio)}</span></div>
+      <div class="ficha-field"><label>Fin</label><span>${fmtDate(PS.currentProg.fecha_fin)}</span></div>
+      <div class="ficha-field"><label>Días</label><span>${esc(PS.currentProg.dias_fmt)}</span></div>
+      <div class="ficha-field"><label>Hs/Sesión</label><span>${PS.currentProg.horas}hs · ${PS.currentProg.n_sesiones} sesiones</span></div>
+    </div>
+  `;
+
+  // Cargar alumnos e inscriptos en paralelo
+  const wrap = document.getElementById('config-prog-alumnos');
+  wrap.innerHTML = '<div class="spinner">Cargando alumnos...</div>';
+
+  const [rAlumnos, rInsc] = await Promise.all([
+    api('GET', '/club/miembros'),
+    api('GET', `/club/programas/${prog_id}/inscriptos`)
+  ]);
+
+  PS.alumnos = (rAlumnos && rAlumnos.ok) ? rAlumnos.data : [];
+  const inscriptos = (rInsc && rInsc.ok) ? rInsc.data : [];
+  PS.inscriptos = new Set(inscriptos.map(i => i.socio_id));
+
+  if (!PS.alumnos.length) {
+    wrap.innerHTML = '<div class="badge-empty">No hay alumnos cargados en tu club.</div>';
+    return;
+  }
+
+  wrap.innerHTML = `
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px;text-align:center">✓</th>
+            <th>Nombres</th><th>Apellidos</th>
+            <th>Cédula</th><th>Categoría</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${PS.alumnos.map((m,i) => `
+            <tr style="background:${i%2===0?'var(--sup)':'var(--fondo)'}">
+              <td style="text-align:center">
+                <input type="checkbox" id="chk-${m.id}"
+                  ${PS.inscriptos.has(m.id) ? 'checked' : ''}
+                  style="accent-color:var(--acento);width:16px;height:16px;cursor:pointer">
+              </td>
+              <td>${esc(m.nombres)}</td>
+              <td>${esc(m.apellidos)}</td>
+              <td style="font-family:monospace">${esc(m.cedula||'—')}</td>
+              <td>${esc(m.categoria||'—')}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function selTodos(val) {
+  PS.alumnos.forEach(m => {
+    const chk = document.getElementById(`chk-${m.id}`);
+    if (chk) chk.checked = val;
+  });
+}
+
+async function guardarInscriptos() {
+  const socio_ids = PS.alumnos
+    .filter(m => document.getElementById(`chk-${m.id}`)?.checked)
+    .map(m => m.id);
+
+  if (!socio_ids.length) {
+    toast('Seleccioná al menos un alumno.', 'err'); return;
+  }
+  const r = await api('POST',
+    `/club/programas/${PS.currentProg.id}/inscriptos`, { socio_ids });
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error al guardar.', 'err'); return; }
+  toast(`✅ ${r.data.inscriptos} alumno${r.data.inscriptos !== 1 ? 's' : ''} inscriptos en el programa.`);
+  await loadProgramas();
+  goTo('programas');
+}
+
+// ── Seguimiento (asistencias) ─────────────────────────────────
+async function abrirSeguimiento(prog_id) {
+  PS.currentProg = PS.programas.find(p => p.id === prog_id);
+  if (!PS.currentProg) return;
+
+  showScreen('seguimiento');
+  document.getElementById('seg-titulo').textContent =
+    `📊 ${PS.currentProg.nombre.toUpperCase()}`;
+  document.getElementById('seg-club-name').textContent = S.club ? S.club.nombre : '';
+
+  // Cargar sesiones
+  const r = await api('GET', `/club/programas/${prog_id}/sesiones`);
+  if (!r || !r.ok) {
+    toast('Error al cargar sesiones.', 'err'); return;
+  }
+  PS.sesiones = r.data;
+  if (!PS.sesiones.length) {
+    document.getElementById('seg-lista').innerHTML =
+      '<div class="badge-empty">Este programa no tiene sesiones generadas.</div>';
+    return;
+  }
+
+  // Llenar selector
+  const sel = document.getElementById('seg-sesion-sel');
+  sel.innerHTML = PS.sesiones.map((s, i) =>
+    `<option value="${i}">${s.fecha_fmt}</option>`
+  ).join('');
+
+  // Ir a la sesión más cercana a hoy
+  const hoy = new Date().toISOString().split('T')[0];
+  PS.sesionActIdx = PS.sesiones.findIndex(s => s.fecha >= hoy);
+  if (PS.sesionActIdx === -1) PS.sesionActIdx = PS.sesiones.length - 1;
+  sel.value = PS.sesionActIdx;
+  await cargarAsistencias();
+}
+
+function navSesion(dir) {
+  const sel = document.getElementById('seg-sesion-sel');
+  const nuevo = parseInt(sel.value) + dir;
+  if (nuevo < 0 || nuevo >= PS.sesiones.length) return;
+  sel.value = nuevo;
+  cargarAsistencias();
+}
+
+async function cargarAsistencias() {
+  const idx = parseInt(document.getElementById('seg-sesion-sel').value);
+  PS.sesionActIdx = idx;
+  const sesion = PS.sesiones[idx];
+  const wrap = document.getElementById('seg-lista');
+  wrap.innerHTML = '<div class="spinner">Cargando...</div>';
+
+  const r = await api('GET', `/club/programas/sesion/${sesion.id}/asistencias`);
+  if (!r || !r.ok) {
+    wrap.innerHTML = '<div class="badge-empty">Error al cargar asistencias.</div>';
+    return;
+  }
+
+  const lista = r.data;
+  PS.asistencias = {};
+  lista.forEach(a => { PS.asistencias[a.socio_id] = a.asistio; });
+
+  if (!lista.length) {
+    wrap.innerHTML = '<div class="badge-empty">No hay alumnos inscriptos en este programa.</div>';
+    return;
+  }
+
+  // Resumen
+  const presentes = lista.filter(a => a.asistio).length;
+  const pct = lista.length ? Math.round(presentes / lista.length * 100) : 0;
+
+  wrap.innerHTML = `
+    <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap">
+      <div class="ficha-card" style="padding:12px 18px;flex:1;min-width:120px;margin:0">
+        <div style="font-size:.7rem;font-weight:700;color:var(--texto-s);text-transform:uppercase">Presentes</div>
+        <div style="font-size:1.4rem;font-weight:700;color:var(--exito)">${presentes}</div>
+      </div>
+      <div class="ficha-card" style="padding:12px 18px;flex:1;min-width:120px;margin:0">
+        <div style="font-size:.7rem;font-weight:700;color:var(--texto-s);text-transform:uppercase">Ausentes</div>
+        <div style="font-size:1.4rem;font-weight:700;color:var(--peligro)">${lista.length - presentes}</div>
+      </div>
+      <div class="ficha-card" style="padding:12px 18px;flex:1;min-width:120px;margin:0">
+        <div style="font-size:.7rem;font-weight:700;color:var(--texto-s);text-transform:uppercase">Asistencia</div>
+        <div style="font-size:1.4rem;font-weight:700;color:var(--acento)">${pct}%</div>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombres</th><th>Apellidos</th><th>Categoría</th>
+            <th style="text-align:center;min-width:120px">Asistencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lista.map((a, i) => `
+            <tr style="background:${i%2===0?'var(--sup)':'var(--fondo)'}">
+              <td>${esc(a.nombres)}</td>
+              <td>${esc(a.apellidos)}</td>
+              <td>${esc(a.categoria||'—')}</td>
+              <td style="text-align:center">
+                <div style="display:flex;gap:8px;justify-content:center">
+                  <button id="btn-pres-${a.socio_id}"
+                    onclick="toggleAsistencia(${a.socio_id}, true)"
+                    style="padding:4px 12px;border-radius:6px;border:none;cursor:pointer;
+                           font-weight:700;font-size:.82rem;transition:.15s;
+                           background:${a.asistio ? 'var(--exito)' : 'var(--sup2)'};
+                           color:${a.asistio ? '#fff' : 'var(--texto-s)'}">
+                    ✅ Presente
+                  </button>
+                  <button id="btn-aus-${a.socio_id}"
+                    onclick="toggleAsistencia(${a.socio_id}, false)"
+                    style="padding:4px 12px;border-radius:6px;border:none;cursor:pointer;
+                           font-weight:700;font-size:.82rem;transition:.15s;
+                           background:${!a.asistio ? 'var(--peligro)' : 'var(--sup2)'};
+                           color:${!a.asistio ? '#fff' : 'var(--texto-s)'}">
+                    ❌ Ausente
+                  </button>
+                </div>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function toggleAsistencia(socio_id, val) {
+  PS.asistencias[socio_id] = val;
+  const btnP = document.getElementById(`btn-pres-${socio_id}`);
+  const btnA = document.getElementById(`btn-aus-${socio_id}`);
+  if (btnP) {
+    btnP.style.background = val ? 'var(--exito)' : 'var(--sup2)';
+    btnP.style.color      = val ? '#fff' : 'var(--texto-s)';
+  }
+  if (btnA) {
+    btnA.style.background = !val ? 'var(--peligro)' : 'var(--sup2)';
+    btnA.style.color      = !val ? '#fff' : 'var(--texto-s)';
+  }
+  // Actualizar resumen en tiempo real
+  const total     = Object.keys(PS.asistencias).length;
+  const presentes = Object.values(PS.asistencias).filter(Boolean).length;
+  const pct       = total ? Math.round(presentes / total * 100) : 0;
+  // mini update visual sin recargar toda la tabla
+}
+
+async function guardarAsistencias() {
+  const sesion = PS.sesiones[PS.sesionActIdx];
+  const asistencias = Object.entries(PS.asistencias).map(([sid, asistio]) => ({
+    socio_id: parseInt(sid), asistio
+  }));
+  if (!asistencias.length) {
+    toast('No hay alumnos para guardar.', 'err'); return;
+  }
+  const r = await api('POST',
+    `/club/programas/sesion/${sesion.id}/asistencias`, { asistencias });
+  if (!r) return;
+  if (!r.ok) { toast(r.data.error || 'Error al guardar.', 'err'); return; }
+  toast(`✅ Asistencia del ${sesion.fecha_fmt} guardada correctamente.`);
+}
+</script>
+
 </body>
 </html>
