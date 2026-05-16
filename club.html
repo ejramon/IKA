@@ -1510,6 +1510,7 @@ async function loadProgramas() {
         <div class="ficha-field"><label>Hs/Sesión</label><span>${p.horas}hs</span></div>
         ${p.descripcion ? `<div class="ficha-field" style="grid-column:1/-1"><label>Descripción</label><span>${esc(p.descripcion)}</span></div>` : ''}
         <div class="ficha-field"><label>Sesiones</label><span>${p.n_sesiones}</span></div>
+        ${p.subcategoria ? `<div class="ficha-field" style="grid-column:1/-1"><label>📂 Subcategoría</label><span style="color:var(--acento);font-weight:700">${esc(p.subcategoria)}</span></div>` : ''}
       </div>
       <div class="ficha-actions">
         <button class="btn btn-blue btn-sm" onclick="abrirConfigurar(${p.id})">
