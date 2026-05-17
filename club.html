@@ -1581,6 +1581,31 @@ function esc(str) {
               </div>
             </div>
           </div>
+
+          <!-- Comentarios del alumno -->
+          <div id="comentarios-alumno-wrap" style="display:none;margin-top:14px">
+            <div style="background:var(--sup2);border-radius:10px;padding:12px">
+              <div style="font-size:.75rem;font-weight:700;color:var(--texto-s);text-transform:uppercase;
+                          margin-bottom:8px;display:flex;align-items:center;gap:6px">
+                💬 Comentarios
+              </div>
+              <!-- Lista de comentarios -->
+              <div id="lista-comentarios" style="max-height:200px;overflow-y:auto;margin-bottom:10px"></div>
+              <!-- Nuevo comentario del club -->
+              <div style="display:flex;gap:8px;align-items:flex-end">
+                <textarea id="txt-nuevo-comentario" rows="2" placeholder="Escribí un comentario del club..."
+                  style="flex:1;background:var(--fondo);border:1px solid var(--borde);color:var(--texto);
+                         padding:8px 10px;border-radius:7px;font-size:.85rem;outline:none;
+                         resize:none;font-family:inherit"></textarea>
+                <button onclick="enviarComentario()"
+                  style="background:var(--primario);color:var(--blanco);border:none;
+                         padding:8px 14px;border-radius:7px;cursor:pointer;font-size:.82rem;
+                         font-weight:700;white-space:nowrap">
+                  Enviar
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1989,10 +2014,10 @@ function toggleAsistencia(socio_id, val) {
 
 async function guardarAsistencias() {
   const sesion = PS.sesiones[PS.sesionActIdx];
-  // Incluir todos — null significa "sin registro" y el servidor lo borrará
   const asistencias = Object.entries(PS.asistencias)
+    .filter(([, asistio]) => asistio !== null)
     .map(([sid, asistio]) => ({
-      socio_id: parseInt(sid), asistio  // true, false, o null
+      socio_id: parseInt(sid), asistio
     }));
   if (!asistencias.length) { toast('No hay alumnos para guardar.', 'err'); return; }
   const r = await api('POST',
@@ -2009,6 +2034,12 @@ let _pctAsistMap = {}; // {fecha: true/false/null}
 async function cargarPct() {
   const socio_id = document.getElementById('sel-alumno-pct').value;
   if (!socio_id) return;
+  const prog_id  = PS.currentProg?.id;
+  if (!prog_id) return;
+
+  // Cargar comentarios
+  await cargarComentarios(prog_id, socio_id);
+  document.getElementById('comentarios-alumno-wrap').style.display = '';
   const hastaVal = document.getElementById('pct-fecha-hasta').value
     || new Date().toISOString().split('T')[0];
   const wrap = document.getElementById('pct-resultado');
@@ -2108,7 +2139,52 @@ function renderCalAlumno() {
   document.getElementById('cal-alumno-grid').innerHTML = html;
 }
 
-// ── Ver inscriptos con ficha ──────────────────────────────────
+// ── Comentarios del alumno en seguimiento ────────────────────
+async function cargarComentarios(prog_id, socio_id) {
+  const lista = document.getElementById('lista-comentarios');
+  if (!lista) return;
+  lista.innerHTML = '<div style="font-size:.78rem;color:var(--texto-s);padding:4px">Cargando...</div>';
+  const r = await api('GET', `/club/programas/${prog_id}/comentarios/${socio_id}`);
+  if (!r || !r.ok) {
+    lista.innerHTML = '<div style="font-size:.78rem;color:var(--texto-s);padding:4px">Sin comentarios aún.</div>';
+    return;
+  }
+  const comentarios = r.data;
+  if (!comentarios.length) {
+    lista.innerHTML = '<div style="font-size:.78rem;color:var(--texto-s);padding:4px">Sin comentarios aún.</div>';
+    return;
+  }
+  lista.innerHTML = comentarios.map(c => {
+    const esAdmin = c.autor === 'admin';
+    const icono   = esAdmin ? '🔑' : '🏫';
+    const alineacion = esAdmin ? 'flex-start' : 'flex-end';
+    const bgColor    = esAdmin ? 'var(--primario-dark)' : 'var(--primario)';
+    return `
+    <div style="display:flex;justify-content:${alineacion};margin-bottom:8px">
+      <div style="max-width:85%;background:${bgColor};border-radius:10px;padding:8px 12px">
+        <div style="font-size:.68rem;font-weight:700;color:var(--borde);margin-bottom:3px">
+          ${icono} ${c.nombre_autor}  ·  ${c.fecha}
+        </div>
+        <div style="font-size:.83rem;color:var(--blanco);line-height:1.4">${esc(c.texto)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  lista.scrollTop = lista.scrollHeight;
+}
+
+async function enviarComentario() {
+  const socio_id = document.getElementById('sel-alumno-pct').value;
+  const prog_id  = PS.currentProg?.id;
+  const txt      = document.getElementById('txt-nuevo-comentario');
+  if (!socio_id || !prog_id || !txt) return;
+  const texto = txt.value.trim();
+  if (!texto) return;
+  const r = await api('POST', `/club/programas/${prog_id}/comentarios/${socio_id}`, { texto });
+  if (!r || !r.ok) { toast('Error al enviar comentario.', 'err'); return; }
+  txt.value = '';
+  await cargarComentarios(prog_id, socio_id);
+  toast('💬 Comentario enviado.');
+}
 async function abrirVerInscriptos(prog_id) {
   PS.currentProg = PS.programas.find(p => p.id === prog_id);
   if (!PS.currentProg) return;
