@@ -185,7 +185,7 @@ def _migrar_tablas_club():
                 sesion_id   INTEGER NOT NULL REFERENCES programa_sesiones(id) ON DELETE CASCADE,
                 socio_id    INTEGER NOT NULL REFERENCES miembros(id)          ON DELETE CASCADE,
                 club_id     INTEGER NOT NULL REFERENCES clubs(id)             ON DELETE CASCADE,
-                asistio     BOOLEAN NOT NULL DEFAULT FALSE,
+                asistio     BOOLEAN         DEFAULT NULL,
                 UNIQUE(sesion_id, socio_id, club_id)
             )
         """)
@@ -1108,12 +1108,11 @@ def club_prog_inscriptos_post(prog_id):
 def club_asistencias_get(sesion_id):
     """
     Devuelve la asistencia de los inscriptos del club para una sesión.
-    Si no hay registro todavía, devuelve los inscriptos con asistio=false.
+    Si no hay registro todavía, devuelve los inscriptos con asistio=null (sin registro).
     """
     try:
         conn = conectar_miembros()
         cur  = conn.cursor()
-        # Verificar que la sesión pertenece a un programa de este club
         cur.execute("""
             SELECT ps.programa_id FROM programa_sesiones ps
             JOIN programa_clubs pc ON pc.programa_id = ps.programa_id
@@ -1125,10 +1124,9 @@ def club_asistencias_get(sesion_id):
             return jsonify({"error": "Sesión no encontrada"}), 404
         prog_id = row[0]
 
-        # Traer inscriptos con su asistencia (LEFT JOIN)
         cur.execute("""
             SELECT pi.socio_id, m.nombres, m.apellidos, m.categoria,
-                   COALESCE(pa.asistio, FALSE)
+                   pa.asistio
             FROM programa_inscriptos pi
             JOIN miembros m ON m.id = pi.socio_id
             LEFT JOIN programa_asistencias pa
@@ -1140,7 +1138,7 @@ def club_asistencias_get(sesion_id):
         liberar_miembros(conn)
         return jsonify([{
             "socio_id": r[0], "nombres": r[1], "apellidos": r[2],
-            "categoria": r[3], "asistio": r[4]
+            "categoria": r[3], "asistio": r[4]  # None → null en JSON
         } for r in rows])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1170,13 +1168,21 @@ def club_asistencias_post(sesion_id):
 
         for item in asistencias:
             socio_id = int(item["socio_id"])
-            asistio  = bool(item.get("asistio", False))
-            cur.execute("""
-                INSERT INTO programa_asistencias (sesion_id, socio_id, club_id, asistio)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (sesion_id, socio_id, club_id)
-                DO UPDATE SET asistio = EXCLUDED.asistio
-            """, (sesion_id, socio_id, g.club_id, asistio))
+            asistio_raw = item.get("asistio")  # puede ser True, False, o None
+            if asistio_raw is None:
+                # Sin registro — eliminar fila si existe
+                cur.execute("""
+                    DELETE FROM programa_asistencias
+                    WHERE sesion_id = %s AND socio_id = %s AND club_id = %s
+                """, (sesion_id, socio_id, g.club_id))
+            else:
+                asistio = bool(asistio_raw)
+                cur.execute("""
+                    INSERT INTO programa_asistencias (sesion_id, socio_id, club_id, asistio)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (sesion_id, socio_id, club_id)
+                    DO UPDATE SET asistio = EXCLUDED.asistio
+                """, (sesion_id, socio_id, g.club_id, asistio))
         conn.commit()
         liberar_miembros(conn)
         return jsonify({"status": "ok"})
