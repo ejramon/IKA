@@ -1989,10 +1989,10 @@ function toggleAsistencia(socio_id, val) {
 
 async function guardarAsistencias() {
   const sesion = PS.sesiones[PS.sesionActIdx];
+  // Incluir todos — null significa "sin registro" y el servidor lo borrará
   const asistencias = Object.entries(PS.asistencias)
-    .filter(([, asistio]) => asistio !== null)
     .map(([sid, asistio]) => ({
-      socio_id: parseInt(sid), asistio
+      socio_id: parseInt(sid), asistio  // true, false, o null
     }));
   if (!asistencias.length) { toast('No hay alumnos para guardar.', 'err'); return; }
   const r = await api('POST',
