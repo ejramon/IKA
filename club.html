@@ -1581,22 +1581,6 @@ function esc(str) {
               </div>
             </div>
           </div>
-          <!-- Comentarios -->
-          <div id="comentarios-wrap" style="display:none;margin-top:14px">
-            <div style="font-size:.72rem;font-weight:700;color:var(--texto-s);
-                        text-transform:uppercase;margin-bottom:8px">💬 Comentarios</div>
-            <div id="comentarios-lista"
-              style="max-height:200px;overflow-y:auto;background:var(--sup2);
-                     border-radius:8px;padding:8px;margin-bottom:10px"></div>
-            <div style="display:flex;gap:8px">
-              <textarea id="comentario-texto" rows="2" placeholder="Escribí un comentario..."
-                style="flex:1;background:var(--sup2);border:1px solid var(--borde);
-                       color:var(--texto);padding:8px 10px;border-radius:8px;
-                       font-size:.85rem;resize:none;outline:none"></textarea>
-              <button class="btn btn-blue btn-sm" onclick="enviarComentario()"
-                style="align-self:flex-end;padding:8px 14px">Enviar</button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -1953,40 +1937,63 @@ async function selDia(fecha) {
         <div style="font-size:1.3rem;font-weight:700;color:var(--blanco)">${pct}%</div>
       </div>
     </div>
-    ${lista.map((a, i) => `
+    ${lista.map((a, i) => {
+      // a.asistio puede ser: true, false, o null/undefined (sin registrar)
+      const estado = a.asistio === true ? 'pres' : a.asistio === false ? 'aus' : 'none';
+      return `
       <div style="display:flex;align-items:center;gap:10px;padding:9px 8px;
                   background:${i%2===0?'var(--sup2)':'transparent'};border-radius:6px;margin-bottom:3px">
         <span style="flex:1;font-size:.85rem;color:var(--texto)">${esc(a.apellidos)}, ${esc(a.nombres)}</span>
-        <div style="display:flex;gap:6px">
+        <div style="display:flex;gap:5px">
           <button id="btn-pres-${a.socio_id}" onclick="toggleAsistencia(${a.socio_id},true)"
-            style="padding:4px 10px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.78rem;
-                   background:${a.asistio?'var(--primario)':'var(--borde)'};
-                   color:${a.asistio?'var(--blanco)':'var(--texto-s)'}">✅</button>
+            title="Presente"
+            style="padding:5px 11px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.82rem;transition:.15s;
+                   background:${estado==='pres'?'#16a34a':'var(--borde)'};
+                   color:${estado==='pres'?'#fff':'var(--texto-s)'}">✔</button>
           <button id="btn-aus-${a.socio_id}" onclick="toggleAsistencia(${a.socio_id},false)"
-            style="padding:4px 10px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.78rem;
-                   background:${!a.asistio?'var(--peligro)':'var(--borde)'};
-                   color:${!a.asistio?'var(--blanco)':'var(--texto-s)'}">❌</button>
+            title="Ausente"
+            style="padding:5px 11px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.82rem;transition:.15s;
+                   background:${estado==='aus'?'#dc2626':'var(--borde)'};
+                   color:${estado==='aus'?'#fff':'var(--texto-s)'}">✘</button>
+          <button id="btn-none-${a.socio_id}" onclick="toggleAsistencia(${a.socio_id},null)"
+            title="Sin registrar"
+            style="padding:5px 11px;border-radius:5px;border:none;cursor:pointer;font-weight:700;font-size:.82rem;transition:.15s;
+                   background:${estado==='none'?'var(--primario-dark)':'var(--borde)'};
+                   color:var(--texto-s)">—</button>
         </div>
-      </div>`).join('')}`;
+      </div>`;
+    }).join('')}`;
 
   btnWrap.style.display = '';
 }
 
 function toggleAsistencia(socio_id, val) {
+  // val: true = presente, false = ausente, null = sin registrar
   PS.asistencias[socio_id] = val;
-  const btnP = document.getElementById(`btn-pres-${socio_id}`);
-  const btnA = document.getElementById(`btn-aus-${socio_id}`);
-  if (btnP) { btnP.style.background = val  ? 'var(--primario)' : 'var(--borde)';
-              btnP.style.color      = val  ? 'var(--blanco)'  : 'var(--texto-s)'; }
-  if (btnA) { btnA.style.background = !val ? 'var(--peligro)' : 'var(--borde)';
-              btnA.style.color      = !val ? 'var(--blanco)'  : 'var(--texto-s)'; }
+  const btnP    = document.getElementById(`btn-pres-${socio_id}`);
+  const btnA    = document.getElementById(`btn-aus-${socio_id}`);
+  const btnNone = document.getElementById(`btn-none-${socio_id}`);
+  if (btnP) {
+    btnP.style.background = val === true  ? '#16a34a' : 'var(--borde)';
+    btnP.style.color      = val === true  ? '#fff'    : 'var(--texto-s)';
+  }
+  if (btnA) {
+    btnA.style.background = val === false ? '#dc2626' : 'var(--borde)';
+    btnA.style.color      = val === false ? '#fff'    : 'var(--texto-s)';
+  }
+  if (btnNone) {
+    btnNone.style.background = val === null ? 'var(--primario-dark)' : 'var(--borde)';
+    btnNone.style.color      = 'var(--texto-s)';
+  }
 }
 
 async function guardarAsistencias() {
   const sesion = PS.sesiones[PS.sesionActIdx];
-  const asistencias = Object.entries(PS.asistencias).map(([sid, asistio]) => ({
-    socio_id: parseInt(sid), asistio
-  }));
+  const asistencias = Object.entries(PS.asistencias)
+    .filter(([, asistio]) => asistio !== null)
+    .map(([sid, asistio]) => ({
+      socio_id: parseInt(sid), asistio
+    }));
   if (!asistencias.length) { toast('No hay alumnos para guardar.', 'err'); return; }
   const r = await api('POST',
     `/club/programas/sesion/${sesion.id}/asistencias`, { asistencias });
@@ -2051,49 +2058,6 @@ async function cargarPct() {
   }
   document.getElementById('cal-alumno-wrap').style.display = '';
   renderCalAlumno();
-  // Comentarios
-  await cargarComentarios(parseInt(socio_id));
-}
-
-// ── Comentarios ───────────────────────────────────────────────
-let _socioIdActivo = null;
-
-async function cargarComentarios(socio_id) {
-  _socioIdActivo = socio_id;
-  const wrap  = document.getElementById('comentarios-wrap');
-  const lista = document.getElementById('comentarios-lista');
-  wrap.style.display = '';
-  lista.innerHTML = '<span style="color:var(--texto-s);font-size:.8rem">Cargando...</span>';
-  const r = await api('GET',
-    `/club/programas/${PS.currentProg.id}/comentarios/${socio_id}`);
-  if (!r || !r.ok) {
-    lista.innerHTML = '<span style="color:var(--texto-s);font-size:.8rem">Error al cargar.</span>';
-    return;
-  }
-  if (!r.data.length) {
-    lista.innerHTML = '<span style="color:var(--texto-s);font-size:.8rem">Sin comentarios aún.</span>';
-    return;
-  }
-  lista.innerHTML = r.data.map(c => `
-    <div style="margin-bottom:8px;background:var(--fondo);border-radius:6px;padding:7px 10px">
-      <div style="font-size:.7rem;font-weight:700;color:var(--texto-s);margin-bottom:2px">
-        ${c.autor === 'admin' ? '🔑 Admin IKA' : `🏫 ${esc(c.nombre_autor)}`}
-        &nbsp;·&nbsp; ${c.fecha}
-      </div>
-      <div style="font-size:.85rem;color:var(--texto)">${esc(c.texto)}</div>
-    </div>`).join('');
-  lista.scrollTop = lista.scrollHeight;
-}
-
-async function enviarComentario() {
-  const txt = document.getElementById('comentario-texto').value.trim();
-  if (!txt || !_socioIdActivo || !PS.currentProg) return;
-  const r = await api('POST',
-    `/club/programas/${PS.currentProg.id}/comentarios/${_socioIdActivo}`,
-    { texto: txt });
-  if (!r || !r.ok) { toast('Error al enviar.', 'err'); return; }
-  document.getElementById('comentario-texto').value = '';
-  await cargarComentarios(_socioIdActivo);
 }
 
 function calAlumnoNav(dir) {
