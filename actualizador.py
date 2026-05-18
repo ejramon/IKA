@@ -1239,6 +1239,193 @@ def club_comentarios_post(prog_id, socio_id):
         return jsonify({"error": str(e)}), 500
 
 
+
+# ═════════════════════════════════════════════════════════════════════════════
+# PORTAL DEL DEPORTISTA — rutas /deportista/...
+# El deportista solo ingresa su cédula — no requiere JWT de club.
+# Solo puede leer su propia información.
+# ═════════════════════════════════════════════════════════════════════════════
+
+@app.route('/deportista')
+@app.route('/deportista/')
+def servir_deportista():
+    """Sirve la página HTML del portal del deportista."""
+    import os
+    path = os.path.join(os.path.dirname(__file__), 'deportista.html')
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
+    return "Portal del deportista no encontrado.", 404
+
+
+@app.route('/deportista/login', methods=['POST'])
+def deportista_login():
+    """
+    Autentica al deportista por cédula.
+    Devuelve sus datos personales y el club al que pertenece.
+    """
+    d      = request.get_json() or {}
+    cedula = (d.get("cedula") or "").strip()
+    if not cedula:
+        return jsonify({"error": "Cédula requerida"}), 400
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        cur.execute("""
+            SELECT m.id, m.nombres, m.apellidos, m.cedula, m.categoria,
+                   m.telefono, m.correo, m.ciudad_residencia,
+                   TO_CHAR(m.fecha_ingreso, 'DD/MM/YYYY'),
+                   c.nombre AS club_nombre, m.club_id
+            FROM miembros m
+            LEFT JOIN clubs c ON c.id = m.club_id
+            WHERE m.cedula = %s
+        """, (cedula,))
+        row = cur.fetchone()
+        liberar_miembros(conn)
+        if not row:
+            return jsonify({"error": "No se encontró un afiliado con esa cédula"}), 404
+        return jsonify({
+            "socio_id":    row[0],
+            "nombres":     row[1],
+            "apellidos":   row[2],
+            "cedula":      row[3],
+            "categoria":   row[4],
+            "telefono":    row[5] or "",
+            "correo":      row[6] or "",
+            "ciudad":      row[7] or "",
+            "fecha_ingreso": row[8] or "",
+            "club_nombre": row[9] or "IKA Ecuador",
+            "club_id":     row[10],
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/deportista/programas', methods=['GET'])
+def deportista_programas():
+    """
+    Devuelve los programas en los que está inscripto el deportista,
+    junto con sus asistencias calculadas.
+    """
+    try:
+        socio_id = int(request.args.get('socio_id'))
+        club_id  = int(request.args.get('club_id'))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Parámetros inválidos"}), 400
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        # Programas donde está inscripto
+        cur.execute("""
+            SELECT p.id, p.nombre,
+                   TO_CHAR(p.fecha_inicio, 'DD/MM/YYYY'),
+                   TO_CHAR(p.fecha_fin,    'DD/MM/YYYY'),
+                   p.dias_semana, p.horas_diarias, p.estado, p.descripcion
+            FROM programa_inscriptos pi
+            JOIN programas p ON p.id = pi.programa_id
+            WHERE pi.socio_id = %s AND pi.club_id = %s
+            ORDER BY p.fecha_inicio DESC
+        """, (socio_id, club_id))
+        programas = cur.fetchall()
+
+        _DIAS = {1:"Lun",2:"Mar",3:"Mié",4:"Jue",5:"Vie",6:"Sáb",7:"Dom"}
+        result = []
+        hoy_str = datetime.now().strftime('%Y-%m-%d')
+
+        for p in programas:
+            pid = p[0]
+            # Sesiones con asistencia de este deportista
+            cur.execute("""
+                SELECT ps.fecha,
+                       pa.asistio
+                FROM programa_sesiones ps
+                LEFT JOIN programa_asistencias pa
+                    ON pa.sesion_id = ps.id
+                    AND pa.socio_id = %s
+                    AND pa.club_id  = %s
+                WHERE ps.programa_id = %s
+                ORDER BY ps.fecha
+            """, (socio_id, club_id, pid))
+            sesiones = cur.fetchall()
+
+            # Calcular estadísticas (solo sesiones pasadas con registro)
+            pasadas     = [(f, a) for f, a in sesiones if str(f) <= hoy_str]
+            con_registro = [(f, a) for f, a in pasadas if a is not None]
+            asistidas    = sum(1 for _, a in con_registro if a is True)
+            pct          = round(asistidas / len(con_registro) * 100) if con_registro else 0
+
+            dias_str = p[4] or ""
+            try:
+                dias_fmt = ", ".join(_DIAS[int(d)] for d in dias_str.split(",") if d.strip())
+            except Exception:
+                dias_fmt = dias_str
+
+            result.append({
+                "id":          pid,
+                "nombre":      p[1],
+                "fecha_inicio": p[2],
+                "fecha_fin":    p[3],
+                "dias_fmt":    dias_fmt,
+                "horas":       float(p[5]) if p[5] else 0,
+                "estado":      p[6],
+                "descripcion": p[7] or "",
+                "sesiones": [{
+                    "fecha":     str(f),
+                    "fecha_fmt": f.strftime('%d/%m/%Y') if f else "",
+                    "asistio":   a,
+                    "pasada":    str(f) <= hoy_str,
+                } for f, a in sesiones],
+                "total_sesiones":  len(sesiones),
+                "sesiones_pasadas": len(pasadas),
+                "con_registro":    len(con_registro),
+                "asistidas":       asistidas,
+                "pct_asistencia":  pct,
+            })
+
+        liberar_miembros(conn)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/deportista/comentarios', methods=['GET'])
+def deportista_comentarios():
+    """
+    Devuelve todos los comentarios del deportista en todos sus programas.
+    """
+    try:
+        socio_id = int(request.args.get('socio_id'))
+        club_id  = int(request.args.get('club_id'))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Parámetros inválidos"}), 400
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        cur.execute("""
+            SELECT pc.programa_id, p.nombre,
+                   pc.autor, pc.texto,
+                   TO_CHAR(pc.creado_en, 'DD/MM/YYYY HH24:MI'),
+                   COALESCE(c.nombre, 'Admin IKA')
+            FROM programa_comentarios pc
+            JOIN programas p ON p.id = pc.programa_id
+            LEFT JOIN clubs c ON c.id = pc.club_id
+            WHERE pc.socio_id = %s AND pc.club_id = %s
+            ORDER BY pc.creado_en ASC
+        """, (socio_id, club_id))
+        rows = cur.fetchall()
+        liberar_miembros(conn)
+        return jsonify([{
+            "programa_id":   r[0],
+            "programa_nombre": r[1],
+            "autor":         r[2],
+            "texto":         r[3],
+            "fecha":         r[4],
+            "nombre_autor":  r[5],
+        } for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ─────────────────────────────────────────────────────────────
 # INICIO DEL SERVIDOR
 # ─────────────────────────────────────────────────────────────
