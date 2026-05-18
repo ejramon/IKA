@@ -1426,6 +1426,33 @@ def deportista_comentarios():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/deportista/compañeros', methods=['GET'])
+def deportista_companeros():
+    """Devuelve los inscriptos del programa (compañeros del deportista)."""
+    try:
+        prog_id = int(request.args.get('prog_id'))
+        club_id = int(request.args.get('club_id'))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Parámetros inválidos"}), 400
+    try:
+        conn = conectar_miembros()
+        cur  = conn.cursor()
+        cur.execute("""
+            SELECT m.nombres, m.apellidos, m.categoria
+            FROM programa_inscriptos pi
+            JOIN miembros m ON m.id = pi.socio_id
+            WHERE pi.programa_id = %s AND pi.club_id = %s
+            ORDER BY m.apellidos, m.nombres
+        """, (prog_id, club_id))
+        rows = cur.fetchall()
+        liberar_miembros(conn)
+        return jsonify([{
+            "nombres": r[0], "apellidos": r[1], "categoria": r[2]
+        } for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ─────────────────────────────────────────────────────────────
 # INICIO DEL SERVIDOR
 # ─────────────────────────────────────────────────────────────
