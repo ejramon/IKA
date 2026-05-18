@@ -5,48 +5,67 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IKA Ecuador — Portal del Deportista</title>
 <style>
+/* ── MODO OSCURO (defecto) ── */
 :root {
   --fondo:#070E1C;--sup:#0C1829;--sup2:#112035;--primario:#14306A;
   --primario-dark:#0C1F4A;--acento:#4A8FE8;--texto:#DDE8F8;--texto-s:#6E90B8;
   --borde:#182C48;--exito:#22C55E;--peligro:#EF4444;--naranja:#F59E0B;--blanco:#FFFFFF;
+  --login-grad:radial-gradient(ellipse at 40% 30%,#0C2055 0%,#070E1C 70%);
+  --shadow:0 20px 60px rgba(0,0,0,.5);
 }
-*{box-sizing:border-box;margin:0;padding:0}
+/* ── MODO CLARO ── */
+body.claro {
+  --fondo:#F0F4F8;--sup:#FFFFFF;--sup2:#E8EEF5;--primario:#1A3A6B;
+  --primario-dark:#0F2347;--acento:#2563EB;--texto:#1E293B;--texto-s:#64748B;
+  --borde:#CBD5E1;--exito:#16A34A;--peligro:#DC2626;--naranja:#D97706;--blanco:#FFFFFF;
+  --login-grad:radial-gradient(ellipse at 40% 30%,#DBEAFE 0%,#F0F4F8 70%);
+  --shadow:0 20px 60px rgba(0,0,0,.1);
+}
+body.claro .toast-ok{background:#DCFCE7;color:#16A34A}
+body.claro .toast-err{background:#FEE2E2;color:#DC2626}
+body.claro .msg-burbuja.admin{background:var(--primario);color:var(--blanco)}
+body.claro .msg-burbuja.club{background:#EFF6FF;border-color:#BFDBFE;color:#1E293B}
+body.claro .msg-texto{color:inherit}
+
+*{box-sizing:border-box;margin:0;padding:0;transition:background-color .25s,color .25s,border-color .25s}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:var(--texto);min-height:100vh}
+
+/* TOAST */
 #toast{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px}
 .toast-item{padding:11px 16px;border-radius:8px;font-size:.84rem;font-weight:600;
-  box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slideIn .3s ease;max-width:300px}
+  box-shadow:0 4px 20px rgba(0,0,0,.3);animation:slideIn .3s ease;max-width:300px}
 .toast-ok{background:#0D3320;border:1px solid var(--exito);color:var(--exito)}
 .toast-err{background:#2A0D0D;border:1px solid var(--peligro);color:var(--peligro)}
 @keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+
 .screen{display:none;min-height:100vh;flex-direction:column}
 .screen.active{display:flex}
 
-/* LOGIN */
-#s-login{align-items:center;justify-content:center;
-  background:radial-gradient(ellipse at 40% 30%,#0C2055 0%,#070E1C 70%)}
+/* ── LOGIN ── */
+#s-login{align-items:center;justify-content:center;background:var(--login-grad)}
 .login-card{background:var(--sup);border:1px solid var(--borde);border-radius:18px;
-  padding:44px 36px;width:min(380px,92vw);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  padding:44px 36px;width:min(380px,92vw);text-align:center;box-shadow:var(--shadow)}
 .login-logo{font-size:3rem;margin-bottom:8px}
 .login-org{font-size:.72rem;letter-spacing:.14em;color:var(--texto-s);text-transform:uppercase;margin-bottom:6px}
-.login-title{font-size:1.5rem;font-weight:700;color:var(--blanco);margin-bottom:4px}
+.login-title{font-size:1.5rem;font-weight:700;color:var(--texto);margin-bottom:4px}
 .login-sub{font-size:.82rem;color:var(--texto-s);margin-bottom:30px}
 .login-card label{display:block;font-size:.72rem;font-weight:600;color:var(--texto-s);
   text-transform:uppercase;letter-spacing:.08em;text-align:left;margin-bottom:6px}
 .login-card input{width:100%;background:var(--sup2);border:1px solid var(--borde);
   color:var(--texto);padding:13px 16px;border-radius:10px;font-size:1rem;outline:none;
-  transition:border-color .2s;font-family:inherit;text-align:center}
+  font-family:inherit;text-align:center}
 .login-card input:focus{border-color:var(--acento)}
 .login-card input::placeholder{color:var(--texto-s)}
 .btn-login{width:100%;margin-top:20px;padding:14px;background:var(--acento);
   color:var(--blanco);border:none;border-radius:10px;font-size:.95rem;font-weight:700;
-  cursor:pointer;font-family:inherit;transition:background .2s}
-.btn-login:hover{background:#3070C8}
+  cursor:pointer;font-family:inherit}
+.btn-login:hover{opacity:.9}
 .btn-login:disabled{opacity:.5;cursor:not-allowed}
 .login-badge{margin-top:24px;font-size:.72rem;color:var(--texto-s);
   display:flex;align-items:center;justify-content:center;gap:6px}
 .login-badge::before,.login-badge::after{content:'';flex:1;height:1px;background:var(--borde)}
 
-/* HEADER */
+/* ── HEADER ── */
 .header{background:var(--primario-dark);border-bottom:1px solid var(--borde);
   display:flex;align-items:center;padding:10px 20px;gap:12px;position:sticky;top:0;z-index:100}
 .header-logo{font-size:1.05rem;font-weight:800;color:var(--acento)}
@@ -54,17 +73,21 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .avatar{width:34px;height:34px;border-radius:8px;background:var(--acento);
   display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;color:var(--blanco)}
 .header-name{font-size:.88rem;font-weight:600;color:var(--blanco);line-height:1.2}
-.header-cat{font-size:.72rem;color:var(--texto-s)}
-.btn-salir{background:none;border:1px solid var(--borde);color:var(--texto-s);
-  padding:6px 12px;border-radius:7px;cursor:pointer;font-size:.78rem;font-family:inherit;transition:all .2s}
+.header-cat{font-size:.72rem;color:rgba(255,255,255,.5)}
+.btn-icon{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);
+  padding:6px 10px;border-radius:7px;cursor:pointer;font-size:.82rem;font-family:inherit}
+.btn-icon:hover{border-color:var(--acento);color:var(--acento)}
+.btn-salir{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);
+  padding:6px 12px;border-radius:7px;cursor:pointer;font-size:.78rem;font-family:inherit}
 .btn-salir:hover{border-color:var(--peligro);color:var(--peligro)}
 
 /* TABS */
 .tabs{display:flex;background:var(--sup);border-bottom:1px solid var(--borde);padding:0 20px}
 .tab{padding:12px 18px;font-size:.84rem;font-weight:600;color:var(--texto-s);cursor:pointer;
-  border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;transition:all .2s}
+  border:none;background:none;font-family:inherit;border-bottom:2px solid transparent}
 .tab.active{color:var(--acento);border-bottom-color:var(--acento)}
 .tab:hover:not(.active){color:var(--texto)}
+
 .main{flex:1;padding:20px;max-width:960px;width:100%;margin:0 auto}
 
 /* PROGRAMA */
@@ -73,9 +96,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .prog-header{padding:16px 20px;background:var(--primario-dark);display:flex;
   align-items:flex-start;justify-content:space-between;gap:12px}
 .prog-nombre{font-size:1rem;font-weight:700;color:var(--blanco)}
-.prog-meta{font-size:.76rem;color:var(--texto-s);margin-top:4px;line-height:1.7}
-.prog-estado{padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;flex-shrink:0}
-.prog-estado.activo{background:rgba(34,197,94,.15);color:var(--exito);border:1px solid rgba(34,197,94,.3)}
+.prog-meta{font-size:.76rem;color:rgba(255,255,255,.5);margin-top:4px;line-height:1.7}
+.prog-estado{padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;flex-shrink:0;margin-top:2px}
+.prog-estado.activo{background:rgba(34,197,94,.2);color:var(--exito);border:1px solid rgba(34,197,94,.4)}
 .prog-estado.inactivo{background:rgba(100,100,100,.15);color:var(--texto-s);border:1px solid var(--borde)}
 .prog-body{padding:18px 20px;display:flex;flex-direction:column;gap:18px}
 
@@ -90,32 +113,35 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .pct-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--texto-s)}
 .pct-num{font-weight:700;font-size:.88rem}
 .pct-bar-bg{height:8px;background:var(--borde);border-radius:4px;overflow:hidden}
-.pct-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.pct-bar-fill{height:100%;border-radius:4px}
 .pct-sub{font-size:.7rem;color:var(--texto-s)}
-.pct-ok .pct-num{color:var(--exito)}   .pct-ok .pct-bar-fill{background:var(--exito)}
-.pct-warn .pct-num{color:var(--naranja)}.pct-warn .pct-bar-fill{background:var(--naranja)}
-.pct-bad .pct-num{color:var(--peligro)}.pct-bad .pct-bar-fill{background:var(--peligro)}
+.pct-ok .pct-num{color:var(--exito)}     .pct-ok .pct-bar-fill{background:var(--exito)}
+.pct-warn .pct-num{color:var(--naranja)} .pct-warn .pct-bar-fill{background:var(--naranja)}
+.pct-bad .pct-num{color:var(--peligro)}  .pct-bad .pct-bar-fill{background:var(--peligro)}
 
-/* CALENDARIO CUADRICULADO */
+/* ── CALENDARIO NAVEGABLE ── */
 .cal-wrap{background:var(--sup2);border-radius:12px;padding:14px}
-.cal-main-title{font-size:.72rem;font-weight:700;color:var(--texto-s);text-transform:uppercase;
-  letter-spacing:.08em;margin-bottom:12px}
-.cal-mes{margin-bottom:16px}
-.cal-mes-nom{font-size:.78rem;font-weight:700;color:var(--texto-s);margin-bottom:6px}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-nav-title{font-size:.92rem;font-weight:700;color:var(--texto)}
+.cal-nav-btn{background:var(--sup);border:1px solid var(--borde);color:var(--texto-s);
+  width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;font-family:inherit}
+.cal-nav-btn:hover:not(:disabled){border-color:var(--acento);color:var(--acento)}
+.cal-nav-btn:disabled{opacity:.3;cursor:not-allowed}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;
   background:var(--borde);border-radius:8px;overflow:hidden}
-.cal-th{background:var(--primario-dark);padding:6px 4px;font-size:.62rem;font-weight:700;
-  color:var(--texto-s);text-align:center;text-transform:uppercase}
-.cal-day{background:var(--sup);padding:8px 4px;text-align:center;font-size:.72rem;min-height:48px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.cal-day.vacio{background:var(--fondo);opacity:.3}
-.cal-day.normal{color:var(--texto-s);opacity:.35}
+.cal-th{background:var(--primario-dark);padding:7px 4px;font-size:.62rem;font-weight:700;
+  color:rgba(255,255,255,.6);text-align:center;text-transform:uppercase}
+.cal-day{background:var(--sup);padding:8px 4px;text-align:center;font-size:.72rem;
+  min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.cal-day.vacio{background:var(--fondo)}
+.cal-day.normal{color:var(--texto-s);opacity:.4}
 .cal-day.asistio{background:rgba(34,197,94,.18);color:var(--exito)}
 .cal-day.ausente{background:rgba(239,68,68,.18);color:var(--peligro)}
 .cal-day.sinreg{background:rgba(245,158,11,.14);color:var(--naranja)}
-.cal-day.futura{background:rgba(74,143,232,.1);color:var(--acento)}
-.cal-ico{font-size:.9rem;font-weight:700}
-.cal-num{font-size:.6rem;opacity:.7}
+.cal-day.futura{background:rgba(74,143,232,.08);color:var(--acento)}
+.cal-ico{font-size:.9rem;font-weight:700;line-height:1}
+.cal-num{font-size:.6rem;opacity:.7;line-height:1}
 .cal-ley{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
 .ley-item{display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--texto-s)}
 .ley-sq{width:11px;height:11px;border-radius:3px}
@@ -129,7 +155,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .msg-burbuja.admin{background:var(--primario);border-bottom-left-radius:4px}
 .msg-burbuja.club{background:rgba(74,143,232,.1);border:1px solid rgba(74,143,232,.2);border-bottom-left-radius:4px}
 .msg-meta{font-size:.66rem;margin-bottom:4px;font-weight:600;color:rgba(255,255,255,.4)}
-.msg-burbuja.admin .msg-meta{color:rgba(74,143,232,.7)}
+.msg-burbuja.admin .msg-meta{color:rgba(74,143,232,.8)}
 .msg-texto{font-size:.85rem;color:var(--blanco)}
 .msgs-empty{font-size:.78rem;color:var(--texto-s);text-align:center;padding:14px}
 
@@ -141,10 +167,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .comp-chip{background:var(--sup);border:1px solid var(--borde);border-radius:9px;
   padding:8px 10px;display:flex;align-items:center;gap:8px}
 .comp-ini{width:28px;height:28px;border-radius:6px;background:var(--primario);
-  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;
-  color:var(--acento);flex-shrink:0}
-.comp-nom{font-size:.76rem;font-weight:600;color:var(--blanco);white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis}
+  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--acento);flex-shrink:0}
+.comp-nom{font-size:.76rem;font-weight:600;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .comp-cat{font-size:.64rem;color:var(--texto-s)}
 .prog-desc{font-size:.82rem;color:var(--texto-s);line-height:1.6;padding:12px 14px;
   background:var(--sup2);border-radius:10px;border-left:3px solid var(--acento)}
@@ -155,7 +179,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .perfil-av{width:68px;height:68px;border-radius:14px;background:var(--primario);
   display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;
   color:var(--acento);border:2px solid var(--acento)}
-.perfil-info h2{font-size:1.2rem;font-weight:700;color:var(--blanco)}
+.perfil-info h2{font-size:1.2rem;font-weight:700;color:var(--texto)}
 .perfil-info p{font-size:.82rem;color:var(--texto-s);margin-top:3px}
 .perfil-badge{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:20px;
   font-size:.72rem;font-weight:700;background:rgba(74,143,232,.15);color:var(--acento);
@@ -167,9 +191,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .perfil-dato{background:var(--sup2);border-radius:10px;padding:12px 14px}
 .perfil-dato .lbl{font-size:.68rem;font-weight:600;color:var(--texto-s);text-transform:uppercase;
   letter-spacing:.07em;margin-bottom:4px}
-.perfil-dato .val{font-size:.88rem;color:var(--blanco);font-weight:500}
+.perfil-dato .val{font-size:.88rem;color:var(--texto);font-weight:500}
 
-/* LOADING / EMPTY */
+/* LOADING */
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:60px;gap:14px;color:var(--texto-s);font-size:.88rem}
 .spinner{width:36px;height:36px;border:3px solid var(--borde);
@@ -181,7 +205,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 
 @media(max-width:500px){
   .stats-row{grid-template-columns:repeat(2,1fr)}
-  .cal-day{min-height:40px;padding:6px 2px}
+  .cal-day{min-height:40px}
 }
 </style>
 </head>
@@ -209,7 +233,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
   <header class="header">
     <div class="header-logo">🥋 IKA Ecuador</div>
     <div class="header-sep"></div>
-    <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn-icon" id="btn-modo" onclick="toggleModo()" title="Cambiar modo">☀️</button>
       <div class="avatar" id="hdr-avatar">?</div>
       <div>
         <div class="header-name" id="hdr-name">—</div>
@@ -235,8 +260,24 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 </div>
 
 <script>
-let SOC=null, MSGS={};
+let SOC=null, MSGS={}, SESIONES_MAP={};
+let modoClaro = false;
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const DIAS=['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
+const MNOM=['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+            'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function toggleModo(){
+  modoClaro=!modoClaro;
+  document.body.classList.toggle('claro',modoClaro);
+  document.getElementById('btn-modo').textContent=modoClaro?'🌙':'☀️';
+  // Re-renderizar calendarios con el nuevo tema
+  document.querySelectorAll('.cal-wrap').forEach(w=>{
+    const pid=w.dataset.pid;
+    const state=calState[pid];
+    if(state) renderCalMes(pid,state.anio,state.mes);
+  });
+}
 
 function toast(msg,tipo='ok',ms=3000){
   const c=document.getElementById('toast');
@@ -260,6 +301,78 @@ function showTab(id,btn){
   btn.classList.add('active');
 }
 
+// ── ESTADO DEL CALENDARIO POR PROGRAMA ──
+const calState={};  // {prog_id: {anio, mes}}
+
+function navCal(pid, delta){
+  let {anio,mes}=calState[pid];
+  mes+=delta;
+  if(mes>11){mes=0;anio++;}
+  if(mes<0){mes=11;anio--;}
+  calState[pid]={anio,mes};
+  renderCalMes(pid,anio,mes);
+}
+
+function renderCalMes(pid, anio, mes){
+  const wrap=document.getElementById(`cal-${pid}`);
+  if(!wrap) return;
+  const sesiones=SESIONES_MAP[pid]||[];
+  const hoy=new Date().toISOString().split('T')[0];
+
+  // Índice de sesiones del mes
+  const sesByDia={};
+  sesiones.forEach(s=>{
+    const sm=s.fecha.substr(0,7);
+    const sanio=parseInt(s.fecha.substr(0,4));
+    const smes=parseInt(s.fecha.substr(5,2))-1;
+    if(sanio===anio && smes===mes){
+      sesByDia[parseInt(s.fecha.substr(8,2))]=s;
+    }
+  });
+
+  // Rango de meses disponibles
+  const mesesDisp=[...new Set(sesiones.map(s=>s.fecha.substr(0,7)))].sort();
+  const mesActualStr=`${anio}-${String(mes+1).padStart(2,'0')}`;
+  const idxActual=mesesDisp.indexOf(mesActualStr);
+  const canPrev=idxActual>0 || mesesDisp.some(m=>m<mesActualStr);
+  const canNext=idxActual<mesesDisp.length-1 || mesesDisp.some(m=>m>mesActualStr);
+
+  const primerDia=new Date(anio,mes,1).getDay();
+  const offset=(primerDia+6)%7;
+  const diasMes=new Date(anio,mes+1,0).getDate();
+
+  let celdas=DIAS.map(d=>`<div class="cal-th">${d}</div>`);
+  for(let i=0;i<offset;i++) celdas.push(`<div class="cal-day vacio"></div>`);
+
+  for(let d=1;d<=diasMes;d++){
+    const s=sesByDia[d];
+    if(s){
+      const cls=s.asistio===true?'asistio':s.asistio===false?'ausente':s.pasada?'sinreg':'futura';
+      const ico=s.asistio===true?'✓':s.asistio===false?'✗':s.pasada?'·':'⟳';
+      celdas.push(`<div class="cal-day ${cls}" title="${s.fecha_fmt}">
+        <span class="cal-ico">${ico}</span><span class="cal-num">${d}</span>
+      </div>`);
+    } else {
+      celdas.push(`<div class="cal-day normal"><span class="cal-num">${d}</span></div>`);
+    }
+  }
+
+  wrap.innerHTML=`
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="navCal('${pid}',-1)" ${!canPrev?'disabled':''}>◀</button>
+      <span class="cal-nav-title">${MNOM[mes]} ${anio}</span>
+      <button class="cal-nav-btn" onclick="navCal('${pid}',1)"  ${!canNext?'disabled':''}>▶</button>
+    </div>
+    <div class="cal-grid">${celdas.join('')}</div>
+    <div class="cal-ley">
+      <div class="ley-item"><div class="ley-sq" style="background:rgba(34,197,94,.4)"></div>Asistió</div>
+      <div class="ley-item"><div class="ley-sq" style="background:rgba(239,68,68,.4)"></div>Ausente</div>
+      <div class="ley-item"><div class="ley-sq" style="background:rgba(245,158,11,.3)"></div>Sin registro</div>
+      <div class="ley-item"><div class="ley-sq" style="background:rgba(74,143,232,.15);border:1px dashed rgba(74,143,232,.5)"></div>Pendiente</div>
+    </div>`;
+}
+
+// ── LOGIN ──
 async function doLogin(){
   const cedula=document.getElementById('inp-cedula').value.trim();
   if(!cedula){toast('Ingresá tu cédula.','err');return;}
@@ -279,6 +392,7 @@ async function doLogin(){
   cargarTodo();renderPerfil();
 }
 
+// ── CARGAR TODO ──
 async function cargarTodo(){
   const el=document.getElementById('programas-content');
   const [rP,rM]=await Promise.all([
@@ -291,21 +405,40 @@ async function cargarTodo(){
   }
   const progs=rP.data;
   MSGS={};
-  if(rM&&rM.ok) rM.data.forEach(m=>{if(!MSGS[m.programa_id])MSGS[m.programa_id]=[];MSGS[m.programa_id].push(m);});
+  if(rM&&rM.ok) rM.data.forEach(m=>{
+    if(!MSGS[m.programa_id])MSGS[m.programa_id]=[];MSGS[m.programa_id].push(m);
+  });
   if(!progs.length){
     el.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div>
       <p class="empty-txt">Aún no estás inscripto en ningún programa.</p></div>`;return;
   }
+  // Guardar sesiones indexadas por programa
+  progs.forEach(p=>{SESIONES_MAP[p.id]=p.sesiones;});
+
   const compReqs=await Promise.all(
     progs.map(p=>api('GET',`/deportista/companeros?prog_id=${p.id}&club_id=${SOC.club_id}`))
   );
   const compMap={};
   progs.forEach((p,i)=>compMap[p.id]=compReqs[i]?.ok?compReqs[i].data:[]);
   const hoy=new Date().toISOString().split('T')[0];
-  el.innerHTML=progs.map(p=>renderProg(p,compMap[p.id]||[],hoy)).join('');
+
+  // Inicializar estado del calendario en el mes más reciente con sesiones
+  progs.forEach(p=>{
+    const fechas=p.sesiones.map(s=>s.fecha).sort();
+    const ultima=fechas[fechas.length-1]||hoy;
+    calState[p.id]={anio:parseInt(ultima.substr(0,4)),mes:parseInt(ultima.substr(5,2))-1};
+  });
+
+  el.innerHTML=progs.map(p=>renderProg(p,compMap[p.id]||[])).join('');
+
+  // Renderizar calendarios
+  progs.forEach(p=>{
+    const {anio,mes}=calState[p.id];
+    renderCalMes(p.id,anio,mes);
+  });
 }
 
-function renderProg(p,comp,hoy){
+function renderProg(p,comp){
   const pct=p.pct_asistencia;
   const cls=pct>=75?'pct-ok':pct>=50?'pct-warn':'pct-bad';
   const msgs=MSGS[p.id]||[];
@@ -314,7 +447,7 @@ function renderProg(p,comp,hoy){
         <div class="msg-meta">${esc(m.nombre_autor)} · ${esc(m.fecha)}</div>
         <div class="msg-texto">${esc(m.texto)}</div>
       </div>`).join('')
-    :`<div class="msgs-empty">Sin mensajes de tu entrenador aún.</div>`;
+    :`<div class="msgs-empty">Sin mensajes aún.</div>`;
   const yo=`${SOC.nombres} ${SOC.apellidos}`.toLowerCase();
   const compH=comp.filter(c=>`${c.nombres} ${c.apellidos}`.toLowerCase()!==yo)
     .map(c=>{
@@ -322,7 +455,8 @@ function renderProg(p,comp,hoy){
       return`<div class="comp-chip">
         <div class="comp-ini">${esc(ini.toUpperCase())}</div>
         <div><div class="comp-nom">${esc(c.apellidos)}, ${esc(c.nombres)}</div>
-        <div class="comp-cat">${esc(c.categoria)}</div></div></div>`;
+        <div class="comp-cat">${esc(c.categoria)}</div></div>
+      </div>`;
     }).join('')||`<div class="msgs-empty">Solo vos en este programa.</div>`;
 
   return`<div class="prog-card">
@@ -330,14 +464,14 @@ function renderProg(p,comp,hoy){
       <div>
         <div class="prog-nombre">${esc(p.nombre)}</div>
         <div class="prog-meta">📅 ${esc(p.fecha_inicio)} → ${esc(p.fecha_fin)}<br>
-          📆 ${esc(p.dias_fmt)} &nbsp;·&nbsp; ${p.horas}h/sesión</div>
+          📆 ${esc(p.dias_fmt)} · ${p.horas}h/sesión</div>
       </div>
       <span class="prog-estado ${p.estado==='activo'?'activo':'inactivo'}">
         ${p.estado==='activo'?'● Activo':'○ Inactivo'}</span>
     </div>
     <div class="prog-body">
       <div class="stats-row">
-        <div class="stat-box"><div class="stat-num">${p.total_sesiones}</div><div class="stat-lbl">Total sesiones</div></div>
+        <div class="stat-box"><div class="stat-num">${p.total_sesiones}</div><div class="stat-lbl">Total</div></div>
         <div class="stat-box"><div class="stat-num">${p.asistidas}</div><div class="stat-lbl">Asistidas</div></div>
         <div class="stat-box"><div class="stat-num">${p.con_registro-p.asistidas}</div><div class="stat-lbl">Ausencias</div></div>
         <div class="stat-box"><div class="stat-num">${p.sesiones_pasadas-p.con_registro}</div><div class="stat-lbl">Sin registro</div></div>
@@ -347,67 +481,19 @@ function renderProg(p,comp,hoy){
         <div class="pct-bar-bg"><div class="pct-bar-fill" style="width:${Math.min(pct,100)}%"></div></div>
         <div class="pct-sub">${p.con_registro>0?`Basado en ${p.con_registro} sesión${p.con_registro!==1?'es':''} con registro`:'Sin sesiones registradas aún'}</div>
       </div>
-      ${renderCalendario(p.sesiones,hoy)}
+      <!-- Calendario navegable -->
+      <div class="cal-wrap" data-pid="${p.id}">
+        <div id="cal-${p.id}"><div class="loading" style="padding:20px"><div class="spinner"></div></div></div>
+      </div>
       <div class="msgs-wrap">
         <div class="msgs-title">💬 Mensajes de tu entrenador</div>
         <div class="msg-list">${msgsH}</div>
       </div>
       <div class="comp-wrap">
-        <div class="comp-title">👥 Compañeros del programa · ${comp.length} inscriptos</div>
+        <div class="comp-title">👥 Compañeros · ${comp.length} inscriptos</div>
         <div class="comp-grid">${compH}</div>
       </div>
       ${p.descripcion?`<div class="prog-desc">📌 ${esc(p.descripcion)}</div>`:''}
-    </div>
-  </div>`;
-}
-
-function renderCalendario(sesiones,hoy){
-  if(!sesiones.length) return '';
-  const DIAS=['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
-  const MNOM=['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-              'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  // Agrupar por mes
-  const meses={};
-  sesiones.forEach(s=>{
-    const m=s.fecha.substr(0,7);
-    if(!meses[m])meses[m]=[];
-    meses[m].push(s);
-  });
-  const mesesHtml=Object.keys(meses).sort().map(mk=>{
-    const [anio,mn]=mk.split('-').map(Number);
-    const primerDia=new Date(anio,mn-1,1).getDay();
-    const offset=(primerDia+6)%7;
-    const diasMes=new Date(anio,mn,0).getDate();
-    const sesByDia={};
-    meses[mk].forEach(s=>sesByDia[parseInt(s.fecha.substr(8,2))]=s);
-    let celdas=DIAS.map(d=>`<div class="cal-th">${d}</div>`);
-    for(let i=0;i<offset;i++) celdas.push(`<div class="cal-day vacio"></div>`);
-    for(let d=1;d<=diasMes;d++){
-      const s=sesByDia[d];
-      if(s){
-        const cls=s.asistio===true?'asistio':s.asistio===false?'ausente':s.pasada?'sinreg':'futura';
-        const ico=s.asistio===true?'✓':s.asistio===false?'✗':s.pasada?'·':'⟳';
-        celdas.push(`<div class="cal-day ${cls}" title="${s.fecha_fmt}">
-          <span class="cal-ico">${ico}</span>
-          <span class="cal-num">${d}</span>
-        </div>`);
-      } else {
-        celdas.push(`<div class="cal-day normal"><span class="cal-num">${d}</span></div>`);
-      }
-    }
-    return`<div class="cal-mes">
-      <div class="cal-mes-nom">${MNOM[mn-1]} ${anio}</div>
-      <div class="cal-grid">${celdas.join('')}</div>
-    </div>`;
-  }).join('');
-  return`<div class="cal-wrap">
-    <div class="cal-main-title">📆 Calendario de sesiones</div>
-    ${mesesHtml}
-    <div class="cal-ley">
-      <div class="ley-item"><div class="ley-sq" style="background:rgba(34,197,94,.4)"></div>Asistió</div>
-      <div class="ley-item"><div class="ley-sq" style="background:rgba(239,68,68,.4)"></div>Ausente</div>
-      <div class="ley-item"><div class="ley-sq" style="background:rgba(245,158,11,.3)"></div>Sin registro</div>
-      <div class="ley-item"><div class="ley-sq" style="background:rgba(74,143,232,.2);border:1px dashed rgba(74,143,232,.4)"></div>Pendiente</div>
     </div>
   </div>`;
 }
@@ -434,7 +520,7 @@ function renderPerfil(){
 }
 
 function salir(){
-  SOC=null;MSGS={};
+  SOC=null;MSGS={};SESIONES_MAP={};
   document.getElementById('inp-cedula').value='';
   document.getElementById('s-portal').classList.remove('active');
   document.getElementById('s-login').classList.add('active');
