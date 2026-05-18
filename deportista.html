@@ -5,29 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IKA Ecuador — Portal del Deportista</title>
 <style>
-/* ── MODO OSCURO (defecto) ── */
-:root {
+:root{
   --fondo:#070E1C;--sup:#0C1829;--sup2:#112035;--primario:#14306A;
   --primario-dark:#0C1F4A;--acento:#4A8FE8;--texto:#DDE8F8;--texto-s:#6E90B8;
   --borde:#182C48;--exito:#22C55E;--peligro:#EF4444;--naranja:#F59E0B;--blanco:#FFFFFF;
   --login-grad:radial-gradient(ellipse at 40% 30%,#0C2055 0%,#070E1C 70%);
   --shadow:0 20px 60px rgba(0,0,0,.5);
 }
-/* ── MODO CLARO ── */
-body.claro {
+body.claro{
   --fondo:#F0F4F8;--sup:#FFFFFF;--sup2:#E8EEF5;--primario:#1A3A6B;
   --primario-dark:#0F2347;--acento:#2563EB;--texto:#1E293B;--texto-s:#64748B;
-  --borde:#CBD5E1;--exito:#16A34A;--peligro:#DC2626;--naranja:#D97706;--blanco:#FFFFFF;
+  --borde:#CBD5E1;--exito:#16A34A;--peligro:#DC2626;--naranja:#D97706;
   --login-grad:radial-gradient(ellipse at 40% 30%,#DBEAFE 0%,#F0F4F8 70%);
   --shadow:0 20px 60px rgba(0,0,0,.1);
 }
 body.claro .toast-ok{background:#DCFCE7;color:#16A34A}
 body.claro .toast-err{background:#FEE2E2;color:#DC2626}
-body.claro .msg-burbuja.admin{background:var(--primario);color:var(--blanco)}
-body.claro .msg-burbuja.club{background:#EFF6FF;border-color:#BFDBFE;color:#1E293B}
-body.claro .msg-texto{color:inherit}
+body.claro .msg-burbuja.admin{background:var(--primario)}
+body.claro .msg-burbuja.club{background:#EFF6FF;border-color:#BFDBFE}
+body.claro .msg-burbuja.club .msg-texto{color:#1E293B}
+body.claro .cal-th{color:rgba(255,255,255,.7)}
 
-*{box-sizing:border-box;margin:0;padding:0;transition:background-color .25s,color .25s,border-color .25s}
+*{box-sizing:border-box;margin:0;padding:0;transition:background-color .2s,color .2s,border-color .2s}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:var(--texto);min-height:100vh}
 
 /* TOAST */
@@ -37,11 +36,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .toast-ok{background:#0D3320;border:1px solid var(--exito);color:var(--exito)}
 .toast-err{background:#2A0D0D;border:1px solid var(--peligro);color:var(--peligro)}
 @keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
-
 .screen{display:none;min-height:100vh;flex-direction:column}
 .screen.active{display:flex}
 
-/* ── LOGIN ── */
+/* LOGIN */
 #s-login{align-items:center;justify-content:center;background:var(--login-grad)}
 .login-card{background:var(--sup);border:1px solid var(--borde);border-radius:18px;
   padding:44px 36px;width:min(380px,92vw);text-align:center;box-shadow:var(--shadow)}
@@ -65,9 +63,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
   display:flex;align-items:center;justify-content:center;gap:6px}
 .login-badge::before,.login-badge::after{content:'';flex:1;height:1px;background:var(--borde)}
 
-/* ── HEADER ── */
+/* HEADER */
 .header{background:var(--primario-dark);border-bottom:1px solid var(--borde);
-  display:flex;align-items:center;padding:10px 20px;gap:12px;position:sticky;top:0;z-index:100}
+  display:flex;align-items:center;padding:10px 20px;gap:12px;position:sticky;top:0;z-index:200}
 .header-logo{font-size:1.05rem;font-weight:800;color:var(--acento)}
 .header-sep{flex:1}
 .avatar{width:34px;height:34px;border-radius:8px;background:var(--acento);
@@ -88,43 +86,74 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .tab.active{color:var(--acento);border-bottom-color:var(--acento)}
 .tab:hover:not(.active){color:var(--texto)}
 
-.main{flex:1;padding:20px;max-width:960px;width:100%;margin:0 auto}
+/* ── LAYOUT LISTA + DETALLE ── */
+.portal-body{flex:1;display:flex;overflow:hidden;height:calc(100vh - 98px)}
 
-/* PROGRAMA */
-.prog-card{background:var(--sup);border:1px solid var(--borde);border-radius:14px;
-  margin-bottom:20px;overflow:hidden}
-.prog-header{padding:16px 20px;background:var(--primario-dark);display:flex;
-  align-items:flex-start;justify-content:space-between;gap:12px}
-.prog-nombre{font-size:1rem;font-weight:700;color:var(--blanco)}
-.prog-meta{font-size:.76rem;color:rgba(255,255,255,.5);margin-top:4px;line-height:1.7}
-.prog-estado{padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;flex-shrink:0;margin-top:2px}
-.prog-estado.activo{background:rgba(34,197,94,.2);color:var(--exito);border:1px solid rgba(34,197,94,.4)}
-.prog-estado.inactivo{background:rgba(100,100,100,.15);color:var(--texto-s);border:1px solid var(--borde)}
-.prog-body{padding:18px 20px;display:flex;flex-direction:column;gap:18px}
+/* LISTA DE PROGRAMAS */
+.prog-list{width:300px;flex-shrink:0;border-right:1px solid var(--borde);
+  background:var(--sup);overflow-y:auto;display:flex;flex-direction:column}
+.prog-list-header{padding:16px 16px 10px;border-bottom:1px solid var(--borde)}
+.prog-list-title{font-size:.72rem;font-weight:700;color:var(--texto-s);
+  text-transform:uppercase;letter-spacing:.1em}
+.prog-item{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;
+  border-bottom:1px solid var(--borde);transition:background .15s;
+  border-left:3px solid transparent;position:relative}
+.prog-item:hover{background:var(--sup2)}
+.prog-item.activo{background:var(--sup2);border-left-color:var(--acento)}
+.prog-item-icon{width:38px;height:38px;border-radius:9px;background:var(--primario);
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.prog-item.activo .prog-item-icon{background:var(--acento)}
+.prog-item-info{flex:1;min-width:0}
+.prog-item-nombre{font-size:.88rem;font-weight:600;color:var(--texto);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-item-meta{font-size:.72rem;color:var(--texto-s);margin-top:2px}
+.prog-item-pct{font-size:.72rem;font-weight:700;flex-shrink:0}
+.prog-item-pct.ok{color:var(--exito)}
+.prog-item-pct.warn{color:var(--naranja)}
+.prog-item-pct.bad{color:var(--peligro)}
+.prog-item-pct.none{color:var(--texto-s)}
 
-/* STATS */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.stat-box{background:var(--sup2);border-radius:10px;padding:12px 10px;text-align:center}
-.stat-num{font-size:1.4rem;font-weight:800;color:var(--acento)}
+/* PANEL DE DETALLE */
+.prog-detail{flex:1;overflow-y:auto;background:var(--fondo)}
+.detail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;color:var(--texto-s);text-align:center;gap:12px}
+.detail-empty .icon{font-size:3rem;opacity:.4}
+.detail-empty p{font-size:.9rem}
+.detail-content{padding:24px;max-width:720px;display:flex;flex-direction:column;gap:18px}
+
+/* DETALLE HEADER */
+.det-header{background:var(--sup);border:1px solid var(--borde);border-radius:14px;
+  overflow:hidden}
+.det-hero{background:var(--primario-dark);padding:20px 22px;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.det-nombre{font-size:1.1rem;font-weight:700;color:var(--blanco)}
+.det-meta{font-size:.78rem;color:rgba(255,255,255,.55);margin-top:6px;line-height:1.8}
+.det-estado{padding:4px 12px;border-radius:20px;font-size:.7rem;font-weight:700;flex-shrink:0}
+.det-estado.activo{background:rgba(34,197,94,.2);color:var(--exito);border:1px solid rgba(34,197,94,.4)}
+.det-estado.inactivo{background:rgba(100,100,100,.15);color:var(--texto-s);border:1px solid var(--borde)}
+.det-stats{display:grid;grid-template-columns:repeat(4,1fr)}
+.stat-cel{padding:12px;text-align:center;border-right:1px solid var(--borde)}
+.stat-cel:last-child{border-right:none}
+.stat-num{font-size:1.3rem;font-weight:800;color:var(--acento)}
 .stat-lbl{font-size:.66rem;color:var(--texto-s);margin-top:2px}
 
 /* BARRA */
-.pct-bar-wrap{display:flex;flex-direction:column;gap:6px}
-.pct-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--texto-s)}
-.pct-num{font-weight:700;font-size:.88rem}
-.pct-bar-bg{height:8px;background:var(--borde);border-radius:4px;overflow:hidden}
+.pct-bar-wrap{background:var(--sup);border:1px solid var(--borde);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.pct-label{display:flex;justify-content:space-between;font-size:.8rem;color:var(--texto-s)}
+.pct-num{font-weight:700;font-size:.9rem}
+.pct-bar-bg{height:9px;background:var(--borde);border-radius:4px;overflow:hidden}
 .pct-bar-fill{height:100%;border-radius:4px}
 .pct-sub{font-size:.7rem;color:var(--texto-s)}
 .pct-ok .pct-num{color:var(--exito)}     .pct-ok .pct-bar-fill{background:var(--exito)}
 .pct-warn .pct-num{color:var(--naranja)} .pct-warn .pct-bar-fill{background:var(--naranja)}
 .pct-bad .pct-num{color:var(--peligro)}  .pct-bad .pct-bar-fill{background:var(--peligro)}
 
-/* ── CALENDARIO NAVEGABLE ── */
-.cal-wrap{background:var(--sup2);border-radius:12px;padding:14px}
+/* CALENDARIO */
+.cal-wrap{background:var(--sup);border:1px solid var(--borde);border-radius:12px;padding:16px}
 .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .cal-nav-title{font-size:.92rem;font-weight:700;color:var(--texto)}
-.cal-nav-btn{background:var(--sup);border:1px solid var(--borde);color:var(--texto-s);
-  width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:.9rem;
+.cal-nav-btn{background:var(--sup2);border:1px solid var(--borde);color:var(--texto-s);
+  width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:.88rem;
   display:flex;align-items:center;justify-content:center;font-family:inherit}
 .cal-nav-btn:hover:not(:disabled){border-color:var(--acento);color:var(--acento)}
 .cal-nav-btn:disabled{opacity:.3;cursor:not-allowed}
@@ -132,10 +161,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
   background:var(--borde);border-radius:8px;overflow:hidden}
 .cal-th{background:var(--primario-dark);padding:7px 4px;font-size:.62rem;font-weight:700;
   color:rgba(255,255,255,.6);text-align:center;text-transform:uppercase}
-.cal-day{background:var(--sup);padding:8px 4px;text-align:center;font-size:.72rem;
-  min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.cal-day{background:var(--sup);padding:8px 4px;text-align:center;min-height:46px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .cal-day.vacio{background:var(--fondo)}
-.cal-day.normal{color:var(--texto-s);opacity:.4}
+.cal-day.normal{color:var(--texto-s);opacity:.35}
 .cal-day.asistio{background:rgba(34,197,94,.18);color:var(--exito)}
 .cal-day.ausente{background:rgba(239,68,68,.18);color:var(--peligro)}
 .cal-day.sinreg{background:rgba(245,158,11,.14);color:var(--naranja)}
@@ -147,9 +176,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .ley-sq{width:11px;height:11px;border-radius:3px}
 
 /* MENSAJES */
-.msgs-wrap{background:var(--sup2);border-radius:12px;padding:14px}
-.msgs-title{font-size:.72rem;font-weight:700;color:var(--texto-s);text-transform:uppercase;
-  letter-spacing:.08em;margin-bottom:10px}
+.msgs-wrap{background:var(--sup);border:1px solid var(--borde);border-radius:12px;padding:16px}
+.sec-label{font-size:.72rem;font-weight:700;color:var(--texto-s);text-transform:uppercase;
+  letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--borde)}
 .msg-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto}
 .msg-burbuja{max-width:88%;padding:10px 14px;border-radius:12px;line-height:1.5}
 .msg-burbuja.admin{background:var(--primario);border-bottom-left-radius:4px}
@@ -160,20 +190,24 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 .msgs-empty{font-size:.78rem;color:var(--texto-s);text-align:center;padding:14px}
 
 /* COMPAÑEROS */
-.comp-wrap{background:var(--sup2);border-radius:12px;padding:14px}
-.comp-title{font-size:.72rem;font-weight:700;color:var(--texto-s);text-transform:uppercase;
-  letter-spacing:.08em;margin-bottom:10px}
+.comp-wrap{background:var(--sup);border:1px solid var(--borde);border-radius:12px;padding:16px}
 .comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
-.comp-chip{background:var(--sup);border:1px solid var(--borde);border-radius:9px;
+.comp-chip{background:var(--sup2);border:1px solid var(--borde);border-radius:9px;
   padding:8px 10px;display:flex;align-items:center;gap:8px}
 .comp-ini{width:28px;height:28px;border-radius:6px;background:var(--primario);
-  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--acento);flex-shrink:0}
-.comp-nom{font-size:.76rem;font-weight:600;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;
+  color:var(--acento);flex-shrink:0}
+.comp-nom{font-size:.76rem;font-weight:600;color:var(--texto);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
 .comp-cat{font-size:.64rem;color:var(--texto-s)}
-.prog-desc{font-size:.82rem;color:var(--texto-s);line-height:1.6;padding:12px 14px;
-  background:var(--sup2);border-radius:10px;border-left:3px solid var(--acento)}
 
-/* PERFIL */
+/* DESCRIPCIÓN */
+.prog-desc-box{background:var(--sup);border:1px solid var(--borde);border-radius:12px;
+  padding:14px 16px;font-size:.84rem;color:var(--texto-s);line-height:1.7;
+  border-left:3px solid var(--acento)}
+
+/* PERFIL TAB */
+.main-perfil{flex:1;padding:24px;max-width:700px;margin:0 auto;overflow-y:auto}
 .perfil-card{background:var(--sup);border:1px solid var(--borde);border-radius:14px;
   padding:24px;display:flex;align-items:center;gap:20px;margin-bottom:20px}
 .perfil-av{width:68px;height:68px;border-radius:14px;background:var(--primario);
@@ -195,18 +229,27 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
 
 /* LOADING */
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:60px;gap:14px;color:var(--texto-s);font-size:.88rem}
-.spinner{width:36px;height:36px;border:3px solid var(--borde);
+  height:100%;gap:14px;color:var(--texto-s);font-size:.88rem}
+.spinner{width:32px;height:32px;border:3px solid var(--borde);
   border-top-color:var(--acento);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.empty-state{text-align:center;padding:50px 20px;color:var(--texto-s)}
-.empty-icon{font-size:2.8rem;margin-bottom:12px}
-.empty-txt{font-size:.9rem}
 
-@media(max-width:500px){
-  .stats-row{grid-template-columns:repeat(2,1fr)}
-  .cal-day{min-height:40px}
+/* MOBILE: ocultar lista cuando hay detalle abierto */
+@media(max-width:640px){
+  .portal-body{position:relative}
+  .prog-list{width:100%;border-right:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:10}
+  .prog-detail{position:absolute;top:0;left:0;right:0;bottom:0;z-index:11;
+    transform:translateX(100%);transition:transform .3s ease}
+  .prog-detail.open{transform:translateX(0)}
+  .btn-back-mobile{display:flex}
 }
+@media(min-width:641px){
+  .btn-back-mobile{display:none}
+}
+.btn-back-mobile{align-items:center;gap:8px;background:var(--sup2);border:1px solid var(--borde);
+  color:var(--texto-s);padding:8px 14px;border-radius:8px;cursor:pointer;
+  font-size:.82rem;font-family:inherit;margin-bottom:16px;width:fit-content}
+.btn-back-mobile:hover{color:var(--acento);border-color:var(--acento)}
 </style>
 </head>
 <body>
@@ -234,7 +277,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
     <div class="header-logo">🥋 IKA Ecuador</div>
     <div class="header-sep"></div>
     <div style="display:flex;align-items:center;gap:8px">
-      <button class="btn-icon" id="btn-modo" onclick="toggleModo()" title="Cambiar modo">☀️</button>
+      <button class="btn-icon" id="btn-modo" onclick="toggleModo()">☀️</button>
       <div class="avatar" id="hdr-avatar">?</div>
       <div>
         <div class="header-name" id="hdr-name">—</div>
@@ -243,25 +286,42 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--fondo);color:v
       <button class="btn-salir" onclick="salir()">Salir</button>
     </div>
   </header>
+
   <nav class="tabs">
     <button class="tab active" onclick="showTab('programas',this)">📋 Mis Programas</button>
     <button class="tab" onclick="showTab('perfil',this)">👤 Mi Perfil</button>
   </nav>
-  <div class="main">
-    <div id="tab-programas">
-      <div id="programas-content">
-        <div class="loading"><div class="spinner"></div>Cargando...</div>
+
+  <!-- Programas: lista + detalle -->
+  <div class="portal-body" id="tab-programas">
+    <!-- Lista izquierda -->
+    <div class="prog-list" id="prog-list">
+      <div class="prog-list-header">
+        <div class="prog-list-title">Mis Programas</div>
+      </div>
+      <div id="lista-content">
+        <div class="loading" style="padding:40px"><div class="spinner"></div></div>
       </div>
     </div>
-    <div id="tab-perfil" style="display:none">
-      <div id="perfil-content"></div>
+    <!-- Panel de detalle derecho -->
+    <div class="prog-detail" id="prog-detail">
+      <div class="detail-empty">
+        <div class="icon">📋</div>
+        <p>Seleccioná un programa<br>para ver el detalle</p>
+      </div>
     </div>
+  </div>
+
+  <!-- Perfil -->
+  <div class="main-perfil" id="tab-perfil" style="display:none">
+    <div id="perfil-content"></div>
   </div>
 </div>
 
 <script>
-let SOC=null, MSGS={}, SESIONES_MAP={};
-let modoClaro = false;
+let SOC=null,MSGS={},SESIONES_MAP={},PROGS=[],COMPS={};
+let modoClaro=false,progActivo=null;
+const calState={};
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const DIAS=['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
 const MNOM=['Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -271,14 +331,8 @@ function toggleModo(){
   modoClaro=!modoClaro;
   document.body.classList.toggle('claro',modoClaro);
   document.getElementById('btn-modo').textContent=modoClaro?'🌙':'☀️';
-  // Re-renderizar calendarios con el nuevo tema
-  document.querySelectorAll('.cal-wrap').forEach(w=>{
-    const pid=w.dataset.pid;
-    const state=calState[pid];
-    if(state) renderCalMes(pid,state.anio,state.mes);
-  });
+  if(progActivo!==null) renderCal(progActivo);
 }
-
 function toast(msg,tipo='ok',ms=3000){
   const c=document.getElementById('toast');
   const d=document.createElement('div');
@@ -288,91 +342,19 @@ function toast(msg,tipo='ok',ms=3000){
 async function api(method,url,body=null){
   try{
     const opts={method,headers:{'Content-Type':'application/json'}};
-    if(body) opts.body=JSON.stringify(body);
+    if(body)opts.body=JSON.stringify(body);
     const r=await fetch(url,opts);
-    const data=await r.json();
-    return{ok:r.ok,data};
+    return{ok:r.ok,data:await r.json()};
   }catch(e){toast('Error de conexión.','err');return null;}
 }
 function showTab(id,btn){
-  ['programas','perfil'].forEach(t=>
-    document.getElementById(`tab-${t}`).style.display=t===id?'':'none');
+  document.getElementById('tab-programas').style.display=id==='programas'?'flex':'none';
+  document.getElementById('tab-perfil').style.display=id==='perfil'?'':'none';
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 }
 
-// ── ESTADO DEL CALENDARIO POR PROGRAMA ──
-const calState={};  // {prog_id: {anio, mes}}
-
-function navCal(pid, delta){
-  let {anio,mes}=calState[pid];
-  mes+=delta;
-  if(mes>11){mes=0;anio++;}
-  if(mes<0){mes=11;anio--;}
-  calState[pid]={anio,mes};
-  renderCalMes(pid,anio,mes);
-}
-
-function renderCalMes(pid, anio, mes){
-  const wrap=document.getElementById(`cal-${pid}`);
-  if(!wrap) return;
-  const sesiones=SESIONES_MAP[pid]||[];
-  const hoy=new Date().toISOString().split('T')[0];
-
-  // Índice de sesiones del mes
-  const sesByDia={};
-  sesiones.forEach(s=>{
-    const sm=s.fecha.substr(0,7);
-    const sanio=parseInt(s.fecha.substr(0,4));
-    const smes=parseInt(s.fecha.substr(5,2))-1;
-    if(sanio===anio && smes===mes){
-      sesByDia[parseInt(s.fecha.substr(8,2))]=s;
-    }
-  });
-
-  // Rango de meses disponibles
-  const mesesDisp=[...new Set(sesiones.map(s=>s.fecha.substr(0,7)))].sort();
-  const mesActualStr=`${anio}-${String(mes+1).padStart(2,'0')}`;
-  const idxActual=mesesDisp.indexOf(mesActualStr);
-  const canPrev=idxActual>0 || mesesDisp.some(m=>m<mesActualStr);
-  const canNext=idxActual<mesesDisp.length-1 || mesesDisp.some(m=>m>mesActualStr);
-
-  const primerDia=new Date(anio,mes,1).getDay();
-  const offset=(primerDia+6)%7;
-  const diasMes=new Date(anio,mes+1,0).getDate();
-
-  let celdas=DIAS.map(d=>`<div class="cal-th">${d}</div>`);
-  for(let i=0;i<offset;i++) celdas.push(`<div class="cal-day vacio"></div>`);
-
-  for(let d=1;d<=diasMes;d++){
-    const s=sesByDia[d];
-    if(s){
-      const cls=s.asistio===true?'asistio':s.asistio===false?'ausente':s.pasada?'sinreg':'futura';
-      const ico=s.asistio===true?'✓':s.asistio===false?'✗':s.pasada?'·':'⟳';
-      celdas.push(`<div class="cal-day ${cls}" title="${s.fecha_fmt}">
-        <span class="cal-ico">${ico}</span><span class="cal-num">${d}</span>
-      </div>`);
-    } else {
-      celdas.push(`<div class="cal-day normal"><span class="cal-num">${d}</span></div>`);
-    }
-  }
-
-  wrap.innerHTML=`
-    <div class="cal-nav">
-      <button class="cal-nav-btn" onclick="navCal('${pid}',-1)" ${!canPrev?'disabled':''}>◀</button>
-      <span class="cal-nav-title">${MNOM[mes]} ${anio}</span>
-      <button class="cal-nav-btn" onclick="navCal('${pid}',1)"  ${!canNext?'disabled':''}>▶</button>
-    </div>
-    <div class="cal-grid">${celdas.join('')}</div>
-    <div class="cal-ley">
-      <div class="ley-item"><div class="ley-sq" style="background:rgba(34,197,94,.4)"></div>Asistió</div>
-      <div class="ley-item"><div class="ley-sq" style="background:rgba(239,68,68,.4)"></div>Ausente</div>
-      <div class="ley-item"><div class="ley-sq" style="background:rgba(245,158,11,.3)"></div>Sin registro</div>
-      <div class="ley-item"><div class="ley-sq" style="background:rgba(74,143,232,.15);border:1px dashed rgba(74,143,232,.5)"></div>Pendiente</div>
-    </div>`;
-}
-
-// ── LOGIN ──
+// ── LOGIN ──────────────────────────────────────────────────────────────────
 async function doLogin(){
   const cedula=document.getElementById('inp-cedula').value.trim();
   if(!cedula){toast('Ingresá tu cédula.','err');return;}
@@ -389,115 +371,229 @@ async function doLogin(){
   document.getElementById('hdr-cat').textContent=`${SOC.categoria} · ${SOC.club_nombre}`;
   document.getElementById('s-login').classList.remove('active');
   document.getElementById('s-portal').classList.add('active');
-  cargarTodo();renderPerfil();
+  cargarTodo();
+  renderPerfil();
 }
 
-// ── CARGAR TODO ──
+// ── CARGAR TODO ────────────────────────────────────────────────────────────
 async function cargarTodo(){
-  const el=document.getElementById('programas-content');
   const [rP,rM]=await Promise.all([
     api('GET',`/deportista/programas?socio_id=${SOC.socio_id}&club_id=${SOC.club_id}`),
     api('GET',`/deportista/comentarios?socio_id=${SOC.socio_id}&club_id=${SOC.club_id}`)
   ]);
   if(!rP||!rP.ok){
-    el.innerHTML=`<div class="empty-state"><div class="empty-icon">⚠️</div>
-      <p class="empty-txt">${esc(rP?.data?.error||'Error.')}</p></div>`;return;
+    document.getElementById('lista-content').innerHTML=
+      `<div class="loading"><p style="color:var(--peligro)">Error al cargar.</p></div>`;return;
   }
-  const progs=rP.data;
+  PROGS=rP.data;
   MSGS={};
   if(rM&&rM.ok) rM.data.forEach(m=>{
     if(!MSGS[m.programa_id])MSGS[m.programa_id]=[];MSGS[m.programa_id].push(m);
   });
-  if(!progs.length){
-    el.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div>
-      <p class="empty-txt">Aún no estás inscripto en ningún programa.</p></div>`;return;
-  }
-  // Guardar sesiones indexadas por programa
-  progs.forEach(p=>{SESIONES_MAP[p.id]=p.sesiones;});
+  PROGS.forEach(p=>{SESIONES_MAP[p.id]=p.sesiones;});
 
-  const compReqs=await Promise.all(
-    progs.map(p=>api('GET',`/deportista/companeros?prog_id=${p.id}&club_id=${SOC.club_id}`))
+  // Cargar compañeros en paralelo
+  const cr=await Promise.all(
+    PROGS.map(p=>api('GET',`/deportista/companeros?prog_id=${p.id}&club_id=${SOC.club_id}`))
   );
-  const compMap={};
-  progs.forEach((p,i)=>compMap[p.id]=compReqs[i]?.ok?compReqs[i].data:[]);
-  const hoy=new Date().toISOString().split('T')[0];
+  PROGS.forEach((p,i)=>COMPS[p.id]=cr[i]?.ok?cr[i].data:[]);
 
-  // Inicializar estado del calendario en el mes más reciente con sesiones
-  progs.forEach(p=>{
+  // Estado inicial del calendario: mes más reciente con sesiones
+  PROGS.forEach(p=>{
     const fechas=p.sesiones.map(s=>s.fecha).sort();
+    const hoy=new Date().toISOString().split('T')[0];
     const ultima=fechas[fechas.length-1]||hoy;
     calState[p.id]={anio:parseInt(ultima.substr(0,4)),mes:parseInt(ultima.substr(5,2))-1};
   });
 
-  el.innerHTML=progs.map(p=>renderProg(p,compMap[p.id]||[])).join('');
-
-  // Renderizar calendarios
-  progs.forEach(p=>{
-    const {anio,mes}=calState[p.id];
-    renderCalMes(p.id,anio,mes);
-  });
+  renderLista();
+  if(PROGS.length) abrirProg(PROGS[0].id);
 }
 
-function renderProg(p,comp){
+// ── RENDER LISTA ──────────────────────────────────────────────────────────
+function renderLista(){
+  if(!PROGS.length){
+    document.getElementById('lista-content').innerHTML=
+      `<div class="loading"><p>Sin programas.</p></div>`;return;
+  }
+  document.getElementById('lista-content').innerHTML=PROGS.map(p=>{
+    const pct=p.pct_asistencia;
+    const pcls=pct>=75?'ok':pct>=50?'warn':p.con_registro>0?'bad':'none';
+    const pStr=p.con_registro>0?`${pct}%`:'—';
+    return`<div class="prog-item" id="item-${p.id}" onclick="abrirProg(${p.id})">
+      <div class="prog-item-icon">${p.estado==='activo'?'📋':'📂'}</div>
+      <div class="prog-item-info">
+        <div class="prog-item-nombre">${esc(p.nombre)}</div>
+        <div class="prog-item-meta">${esc(p.fecha_inicio)} → ${esc(p.fecha_fin)}</div>
+      </div>
+      <div class="prog-item-pct ${pcls}">${pStr}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── ABRIR PROGRAMA ─────────────────────────────────────────────────────────
+function abrirProg(pid){
+  progActivo=pid;
+  // Resaltar en lista
+  document.querySelectorAll('.prog-item').forEach(el=>el.classList.remove('activo'));
+  const item=document.getElementById(`item-${pid}`);
+  if(item) item.classList.add('activo');
+
+  const p=PROGS.find(x=>x.id===pid);
+  if(!p) return;
+
   const pct=p.pct_asistencia;
   const cls=pct>=75?'pct-ok':pct>=50?'pct-warn':'pct-bad';
-  const msgs=MSGS[p.id]||[];
+  const msgs=MSGS[pid]||[];
   const msgsH=msgs.length
     ?msgs.map(m=>`<div class="msg-burbuja ${m.autor==='admin'?'admin':'club'}">
         <div class="msg-meta">${esc(m.nombre_autor)} · ${esc(m.fecha)}</div>
         <div class="msg-texto">${esc(m.texto)}</div>
       </div>`).join('')
-    :`<div class="msgs-empty">Sin mensajes aún.</div>`;
-  const yo=`${SOC.nombres} ${SOC.apellidos}`.toLowerCase();
-  const compH=comp.filter(c=>`${c.nombres} ${c.apellidos}`.toLowerCase()!==yo)
-    .map(c=>{
-      const ini=(c.nombres[0]||'')+(c.apellidos[0]||'');
-      return`<div class="comp-chip">
-        <div class="comp-ini">${esc(ini.toUpperCase())}</div>
-        <div><div class="comp-nom">${esc(c.apellidos)}, ${esc(c.nombres)}</div>
-        <div class="comp-cat">${esc(c.categoria)}</div></div>
-      </div>`;
-    }).join('')||`<div class="msgs-empty">Solo vos en este programa.</div>`;
+    :`<div class="msgs-empty">Sin mensajes de tu entrenador aún.</div>`;
 
-  return`<div class="prog-card">
-    <div class="prog-header">
-      <div>
-        <div class="prog-nombre">${esc(p.nombre)}</div>
-        <div class="prog-meta">📅 ${esc(p.fecha_inicio)} → ${esc(p.fecha_fin)}<br>
-          📆 ${esc(p.dias_fmt)} · ${p.horas}h/sesión</div>
+  const yo=`${SOC.nombres} ${SOC.apellidos}`.toLowerCase();
+  const comp=(COMPS[pid]||[]).filter(c=>`${c.nombres} ${c.apellidos}`.toLowerCase()!==yo);
+  const compH=comp.length
+    ?comp.map(c=>{
+        const ini=(c.nombres[0]||'')+(c.apellidos[0]||'');
+        return`<div class="comp-chip">
+          <div class="comp-ini">${esc(ini.toUpperCase())}</div>
+          <div><div class="comp-nom">${esc(c.apellidos)}, ${esc(c.nombres)}</div>
+          <div class="comp-cat">${esc(c.categoria)}</div></div>
+        </div>`;
+      }).join('')
+    :`<div class="msgs-empty">Solo vos en este programa.</div>`;
+
+  document.getElementById('prog-detail').innerHTML=`
+    <div class="detail-content">
+      <button class="btn-back-mobile" onclick="cerrarDetalleMobile()">◀ Volver</button>
+
+      <!-- Header del programa -->
+      <div class="det-header">
+        <div class="det-hero">
+          <div>
+            <div class="det-nombre">${esc(p.nombre)}</div>
+            <div class="det-meta">
+              📅 ${esc(p.fecha_inicio)} → ${esc(p.fecha_fin)}<br>
+              📆 ${esc(p.dias_fmt)} &nbsp;·&nbsp; ${p.horas}h por sesión
+            </div>
+          </div>
+          <span class="det-estado ${p.estado==='activo'?'activo':'inactivo'}">
+            ${p.estado==='activo'?'● Activo':'○ Inactivo'}
+          </span>
+        </div>
+        <div class="det-stats">
+          <div class="stat-cel"><div class="stat-num">${p.total_sesiones}</div><div class="stat-lbl">Total</div></div>
+          <div class="stat-cel"><div class="stat-num">${p.asistidas}</div><div class="stat-lbl">Asistidas</div></div>
+          <div class="stat-cel"><div class="stat-num">${p.con_registro-p.asistidas}</div><div class="stat-lbl">Ausencias</div></div>
+          <div class="stat-cel"><div class="stat-num">${p.sesiones_pasadas-p.con_registro}</div><div class="stat-lbl">Sin registro</div></div>
+        </div>
       </div>
-      <span class="prog-estado ${p.estado==='activo'?'activo':'inactivo'}">
-        ${p.estado==='activo'?'● Activo':'○ Inactivo'}</span>
-    </div>
-    <div class="prog-body">
-      <div class="stats-row">
-        <div class="stat-box"><div class="stat-num">${p.total_sesiones}</div><div class="stat-lbl">Total</div></div>
-        <div class="stat-box"><div class="stat-num">${p.asistidas}</div><div class="stat-lbl">Asistidas</div></div>
-        <div class="stat-box"><div class="stat-num">${p.con_registro-p.asistidas}</div><div class="stat-lbl">Ausencias</div></div>
-        <div class="stat-box"><div class="stat-num">${p.sesiones_pasadas-p.con_registro}</div><div class="stat-lbl">Sin registro</div></div>
-      </div>
+
+      <!-- Barra -->
       <div class="pct-bar-wrap ${cls}">
         <div class="pct-label"><span>Asistencia registrada</span><span class="pct-num">${pct}%</span></div>
         <div class="pct-bar-bg"><div class="pct-bar-fill" style="width:${Math.min(pct,100)}%"></div></div>
-        <div class="pct-sub">${p.con_registro>0?`Basado en ${p.con_registro} sesión${p.con_registro!==1?'es':''} con registro`:'Sin sesiones registradas aún'}</div>
+        <div class="pct-sub">${p.con_registro>0
+          ?`Basado en ${p.con_registro} sesión${p.con_registro!==1?'es':''} con registro`
+          :'Sin sesiones registradas aún'}</div>
       </div>
-      <!-- Calendario navegable -->
-      <div class="cal-wrap" data-pid="${p.id}">
-        <div id="cal-${p.id}"><div class="loading" style="padding:20px"><div class="spinner"></div></div></div>
+
+      <!-- Calendario -->
+      <div class="cal-wrap">
+        <div id="cal-panel-${pid}"></div>
       </div>
+
+      <!-- Mensajes -->
       <div class="msgs-wrap">
-        <div class="msgs-title">💬 Mensajes de tu entrenador</div>
+        <div class="sec-label">💬 Mensajes de tu entrenador</div>
         <div class="msg-list">${msgsH}</div>
       </div>
+
+      <!-- Compañeros -->
       <div class="comp-wrap">
-        <div class="comp-title">👥 Compañeros · ${comp.length} inscriptos</div>
+        <div class="sec-label">👥 Compañeros · ${(COMPS[pid]||[]).length} inscriptos</div>
         <div class="comp-grid">${compH}</div>
       </div>
-      ${p.descripcion?`<div class="prog-desc">📌 ${esc(p.descripcion)}</div>`:''}
-    </div>
-  </div>`;
+
+      ${p.descripcion?`<div class="prog-desc-box">📌 ${esc(p.descripcion)}</div>`:''}
+    </div>`;
+
+  renderCal(pid);
+
+  // Mobile: slide in
+  document.getElementById('prog-detail').classList.add('open');
 }
 
+function cerrarDetalleMobile(){
+  document.getElementById('prog-detail').classList.remove('open');
+}
+
+// ── CALENDARIO ─────────────────────────────────────────────────────────────
+function navCal(pid,delta){
+  let{anio,mes}=calState[pid];
+  mes+=delta;
+  if(mes>11){mes=0;anio++;}
+  if(mes<0){mes=11;anio--;}
+  calState[pid]={anio,mes};
+  renderCal(pid);
+}
+
+function renderCal(pid){
+  const wrap=document.getElementById(`cal-panel-${pid}`);
+  if(!wrap)return;
+  const sesiones=SESIONES_MAP[pid]||[];
+  const{anio,mes}=calState[pid];
+  const hoy=new Date().toISOString().split('T')[0];
+
+  // Sesiones de este mes
+  const sesByDia={};
+  sesiones.forEach(s=>{
+    if(parseInt(s.fecha.substr(0,4))===anio&&parseInt(s.fecha.substr(5,2))-1===mes)
+      sesByDia[parseInt(s.fecha.substr(8,2))]=s;
+  });
+
+  // Meses disponibles para navegación
+  const mesesDisp=[...new Set(sesiones.map(s=>s.fecha.substr(0,7)))].sort();
+  const mesStr=`${anio}-${String(mes+1).padStart(2,'0')}`;
+  const canPrev=mesesDisp.some(m=>m<mesStr);
+  const canNext=mesesDisp.some(m=>m>mesStr);
+
+  const primerDia=new Date(anio,mes,1).getDay();
+  const offset=(primerDia+6)%7;
+  const diasMes=new Date(anio,mes+1,0).getDate();
+
+  let celdas=DIAS.map(d=>`<div class="cal-th">${d}</div>`);
+  for(let i=0;i<offset;i++)celdas.push(`<div class="cal-day vacio"></div>`);
+  for(let d=1;d<=diasMes;d++){
+    const s=sesByDia[d];
+    if(s){
+      const c=s.asistio===true?'asistio':s.asistio===false?'ausente':s.pasada?'sinreg':'futura';
+      const i=s.asistio===true?'✓':s.asistio===false?'✗':s.pasada?'·':'⟳';
+      celdas.push(`<div class="cal-day ${c}" title="${s.fecha_fmt}">
+        <span class="cal-ico">${i}</span><span class="cal-num">${d}</span></div>`);
+    }else{
+      celdas.push(`<div class="cal-day normal"><span class="cal-num">${d}</span></div>`);
+    }
+  }
+
+  wrap.innerHTML=`
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="navCal(${pid},-1)" ${!canPrev?'disabled':''}>◀</button>
+      <span class="cal-nav-title">${MNOM[mes]} ${anio}</span>
+      <button class="cal-nav-btn" onclick="navCal(${pid},1)"  ${!canNext?'disabled':''}>▶</button>
+    </div>
+    <div class="cal-grid">${celdas.join('')}</div>
+    <div class="cal-ley">
+      <div class="ley-item"><div class="ley-sq" style="background:rgba(34,197,94,.4)"></div>Asistió</div>
+      <div class="ley-item"><div class="ley-sq" style="background:rgba(239,68,68,.4)"></div>Ausente</div>
+      <div class="ley-item"><div class="ley-sq" style="background:rgba(245,158,11,.3)"></div>Sin registro</div>
+      <div class="ley-item"><div class="ley-sq" style="background:rgba(74,143,232,.12);border:1px dashed rgba(74,143,232,.5)"></div>Pendiente</div>
+    </div>`;
+}
+
+// ── PERFIL ─────────────────────────────────────────────────────────────────
 function renderPerfil(){
   const ini=(SOC.nombres[0]||'')+(SOC.apellidos[0]||'');
   document.getElementById('perfil-content').innerHTML=`
@@ -519,14 +615,19 @@ function renderPerfil(){
     </div>`;
 }
 
+// ── SALIR ──────────────────────────────────────────────────────────────────
 function salir(){
-  SOC=null;MSGS={};SESIONES_MAP={};
+  SOC=null;MSGS={};SESIONES_MAP={};PROGS=[];COMPS={};progActivo=null;
   document.getElementById('inp-cedula').value='';
   document.getElementById('s-portal').classList.remove('active');
   document.getElementById('s-login').classList.add('active');
-  document.getElementById('tab-programas').style.display='';
+  document.getElementById('tab-programas').style.display='flex';
   document.getElementById('tab-perfil').style.display='none';
   document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',i===0));
+  document.getElementById('lista-content').innerHTML=
+    `<div class="loading" style="padding:40px"><div class="spinner"></div></div>`;
+  document.getElementById('prog-detail').innerHTML=
+    `<div class="detail-empty"><div class="icon">📋</div><p>Seleccioná un programa<br>para ver el detalle</p></div>`;
 }
 </script>
 </body>
